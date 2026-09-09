@@ -19,7 +19,7 @@ export default function Home() {
 
     try {
       // IMPORTANTE: Troque pela URL da sua API no Render
-      const resposta = await fetch("https://sua-api-aqui.onrender.com/gerar-pdf", {
+      const resposta = await fetch("https://smartrs.onrender.com/gerar-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endereco }),
