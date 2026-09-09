@@ -101,6 +101,7 @@ export default function Home() {
     // Cronograma rebalanceado: Tempos específicos para cada etapa (em milissegundos)
     // Isso "mascara" o tempo real de 15 a 25s que a IA leva para escrever o copy.
    // Cronograma rebalanceado com as novas requisições (AQI e Solar)
+  // Cronograma rebalanceado: 12 etapas para cobrir as integrações 3D
     const etapas = [
       { prog: 12, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
       { prog: 22, msg: "Mapeando infraestrutura no Google Places...", tempo: 3000 },
@@ -108,11 +109,11 @@ export default function Home() {
       { prog: 40, msg: "Consultando topografia e insolação...", tempo: 6000 },
       { prog: 48, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 7500 },
       { prog: 56, msg: "Mapeando Telhado e Potencial Solar Energético...", tempo: 9000 },
-      { prog: 65, msg: "Analisando vocação turística e lazer...", tempo: 11000 },
-      { prog: 72, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 13500 },
-      { prog: 80, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 17000 },
-      { prog: 88, msg: "Revisando gatilhos mentais e persuasão...", tempo: 22000 },
-      { prog: 94, msg: "Processando imagens de Satélite e Street View...", tempo: 26000 },
+      { prog: 65, msg: "Buscando tour 3D cinematográfico (Aerial View)...", tempo: 11000 },
+      { prog: 73, msg: "Analisando vocação turística e lazer...", tempo: 13000 },
+      { prog: 80, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 16000 },
+      { prog: 88, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 20000 },
+      { prog: 94, msg: "Revisando gatilhos mentais e processando mídias...", tempo: 25000 },
       { prog: 98, msg: "Diagramando Dossiê final em formato PDF...", tempo: 30000 },
     ];
 
