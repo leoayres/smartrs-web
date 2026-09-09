@@ -100,17 +100,20 @@ export default function Home() {
 
     // Cronograma rebalanceado: Tempos específicos para cada etapa (em milissegundos)
     // Isso "mascara" o tempo real de 15 a 25s que a IA leva para escrever o copy.
+   // Cronograma rebalanceado com as novas requisições (AQI e Solar)
     const etapas = [
       { prog: 12, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
-      { prog: 25, msg: "Mapeando infraestrutura no Google Places...", tempo: 3500 },
-      { prog: 38, msg: "Calculando Walk Score e proximidades...", tempo: 5500 },
-      { prog: 48, msg: "Consultando topografia, relevo e face solar...", tempo: 7500 },
-      { prog: 58, msg: "Analisando vocação turística e lazer...", tempo: 10000 },
-      { prog: 68, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 13000 },
-      { prog: 77, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 17000 },
-      { prog: 85, msg: "Revisando gatilhos mentais e persuasão...", tempo: 22000 },
-      { prog: 92, msg: "Processando imagens de Satélite e Street View...", tempo: 26000 },
-      { prog: 97, msg: "Diagramando Dossiê final em formato PDF...", tempo: 30000 },
+      { prog: 22, msg: "Mapeando infraestrutura no Google Places...", tempo: 3000 },
+      { prog: 32, msg: "Calculando Walk Score e proximidades...", tempo: 4500 },
+      { prog: 40, msg: "Consultando topografia e insolação...", tempo: 6000 },
+      { prog: 48, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 7500 },
+      { prog: 56, msg: "Mapeando Telhado e Potencial Solar Energético...", tempo: 9000 },
+      { prog: 65, msg: "Analisando vocação turística e lazer...", tempo: 11000 },
+      { prog: 72, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 13500 },
+      { prog: 80, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 17000 },
+      { prog: 88, msg: "Revisando gatilhos mentais e persuasão...", tempo: 22000 },
+      { prog: 94, msg: "Processando imagens de Satélite e Street View...", tempo: 26000 },
+      { prog: 98, msg: "Diagramando Dossiê final em formato PDF...", tempo: 30000 },
     ];
 
     const timeouts: any[] = [];
