@@ -138,6 +138,11 @@ export default function Home() {
     );
   }
 
+  // TELA DE ESPERA ENQUANTO VERIFICA O LOGIN
+  if (verificandoAuth) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-slate-500">Autenticando...</div>;
+  }
+
   // TELA 1: MODO BUSCA
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-20 font-sans">
