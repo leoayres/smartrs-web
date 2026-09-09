@@ -75,7 +75,7 @@ export default function Login() {
               className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
               required
             />
-          </div>
+          </div> 
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Senha</label>
