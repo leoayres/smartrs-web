@@ -94,27 +94,35 @@ export default function Home() {
     setErro("");
     setMostrarSugestoes(false);
     
-    // Inicia a simulação de progresso
-    setProgresso(5);
-    setMensagemProgresso("Iniciando varredura de dados...");
+    // Inicia a barra
+    setProgresso(2);
+    setMensagemProgresso("Iniciando varredura geoespacial...");
 
+    // Cronograma rebalanceado: Tempos específicos para cada etapa (em milissegundos)
+    // Isso "mascara" o tempo real de 15 a 25s que a IA leva para escrever o copy.
     const etapas = [
-      { prog: 20, msg: "Cruzando coordenadas geoespaciais via Mapbox API..." },
-      { prog: 40, msg: "Consultando risco hidrológico e topografia do terreno..." },
-      { prog: 65, msg: "Analisando malha comercial e infraestrutura no Google Places..." },
-      { prog: 85, msg: "Aplicando Inteligência Artificial (Gemini) na precificação..." },
-      { prog: 95, msg: "Renderizando Dossiê em formato PDF..." },
+      { prog: 12, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
+      { prog: 25, msg: "Mapeando infraestrutura no Google Places...", tempo: 3500 },
+      { prog: 38, msg: "Calculando Walk Score e proximidades...", tempo: 5500 },
+      { prog: 48, msg: "Consultando topografia, relevo e face solar...", tempo: 7500 },
+      { prog: 58, msg: "Analisando vocação turística e lazer...", tempo: 10000 },
+      { prog: 68, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 13000 },
+      { prog: 77, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 17000 },
+      { prog: 85, msg: "Revisando gatilhos mentais e persuasão...", tempo: 22000 },
+      { prog: 92, msg: "Processando imagens de Satélite e Street View...", tempo: 26000 },
+      { prog: 97, msg: "Diagramando Dossiê final em formato PDF...", tempo: 30000 },
     ];
 
-    let etapaAtual = 0;
+    const timeouts: any[] = [];
     
-    const intervaloProgresso = setInterval(() => {
-      if (etapaAtual < etapas.length) {
-        setProgresso(etapas[etapaAtual].prog);
-        setMensagemProgresso(etapas[etapaAtual].msg);
-        etapaAtual++;
-      }
-    }, 2000); // Avança de etapa a cada 2 segundos
+    // Dispara todas as mensagens nos tempos programados
+    etapas.forEach((etapa) => {
+      const timeout = setTimeout(() => {
+        setProgresso(etapa.prog);
+        setMensagemProgresso(etapa.msg);
+      }, etapa.tempo);
+      timeouts.push(timeout);
+    });
 
     try {
       const resposta = await fetch("https://smartrs.onrender.com/gerar-pdf", {
@@ -127,20 +135,21 @@ export default function Home() {
 
       const data = await resposta.json();
       
-      // Conclui o progresso
-      clearInterval(intervaloProgresso);
+      // Se o servidor for super rápido e terminar antes, cancelamos as mensagens que faltaram
+      timeouts.forEach(clearTimeout);
+      
       setProgresso(100);
       setMensagemProgresso("Dossiê gerado com sucesso!");
       
-      // Dá um micro delay só para o usuário ver que chegou a 100%
+      // Um pequeno delay para o usuário ver o 100% antes da tela mudar
       setTimeout(() => {
         setHtmlPreview(data.html_preview);
         setPdfData(data.pdf_base64);
         setLoading(false);
-      }, 500);
+      }, 800);
 
     } catch (err: any) {
-      clearInterval(intervaloProgresso);
+      timeouts.forEach(clearTimeout);
       setLoading(false);
       setErro(err.message);
     }
