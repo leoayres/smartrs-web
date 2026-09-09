@@ -6,38 +6,31 @@ export default function Home() {
   const [endereco, setEndereco] = useState("");
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
+  
+  // Novos estados para controlar a tela de resultado
+  const [htmlPreview, setHtmlPreview] = useState("");
+  const [pdfData, setPdfData] = useState("");
 
   const handleGerarPdf = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!endereco) {
-      setErro("Por favor, digite um endereço válido.");
-      return;
-    }
-
-    setLoading(true);
-    setErro("");
-
+    if (!endereco) return setErro("Digite um endereço.");
+    
+    setLoading(true); setErro("");
+    
     try {
-      // IMPORTANTE: Troque pela URL da sua API no Render
       const resposta = await fetch("https://smartrs.onrender.com/gerar-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endereco }),
       });
 
-      if (!resposta.ok) {
-        throw new Error("Falha ao gerar o relatório. Tente novamente.");
-      }
+      if (!resposta.ok) throw new Error("Falha ao gerar relatório.");
 
-      // Converte a resposta em um arquivo físico (Blob) e força o download
-      const blob = await resposta.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Dossie_${endereco.substring(0, 15).replace(/\s/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      const data = await resposta.json();
+      
+      // Salva o HTML para mostrar na tela e o Base64 do PDF para o botão
+      setHtmlPreview(data.html_preview);
+      setPdfData(data.pdf_base64);
       
     } catch (err: any) {
       setErro(err.message);
@@ -46,66 +39,80 @@ export default function Home() {
     }
   };
 
+  // Função que o botão de "Baixar PDF" vai chamar
+  const baixarPdf = () => {
+    const linkSource = `data:application/pdf;base64,${pdfData}`;
+    const downloadLink = document.createElement("a");
+    downloadLink.href = linkSource;
+    downloadLink.download = `Laudo_${endereco.substring(0, 15)}.pdf`;
+    downloadLink.click();
+  };
+
+  const voltar = () => {
+    setHtmlPreview("");
+    setPdfData("");
+  };
+
+  // TELA 2: MODO RESULTADO (Preview + Botão de Download)
+  if (htmlPreview) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 font-sans">
+        <div className="w-full max-w-3xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+          
+          <div className="flex justify-between items-center mb-8 border-b pb-4">
+            <h2 className="text-xl font-bold text-slate-800">Preview do Laudo</h2>
+            <div className="flex gap-4">
+              <button onClick={voltar} className="text-slate-500 hover:text-slate-800 font-semibold px-4 py-2">
+                Novo Endereço
+              </button>
+              <button onClick={baixarPdf} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all">
+                📥 Baixar PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Injeta o HTML gerado pela IA e estilizado pelo Backend */}
+          <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
+          
+        </div>
+      </div>
+    );
+  }
+
+  // TELA 1: MODO BUSCA (O formulário original)
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-20 font-sans">
       <div className="w-full max-w-2xl bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
-        
-        {/* Cabeçalho */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-800 mb-3">
-            Dossiê Climático & Valorização
-          </h1>
-          <p className="text-slate-500">
-            Gere laudos técnicos e comerciais impressionantes para fechar suas vendas imobiliárias mais rápido.
-          </p>
+          <h1 className="text-3xl font-bold text-slate-800 mb-3">Dossiê Climático & Valorização</h1>
+          <p className="text-slate-500">Gere laudos impressionantes e feche vendas mais rápido.</p>
         </div>
 
-        {/* Formulário */}
         <form onSubmit={handleGerarPdf} className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">
-              Endereço do Imóvel
-            </label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Endereço do Imóvel</label>
             <input
               type="text"
               value={endereco}
               onChange={(e) => setEndereco(e.target.value)}
-              placeholder="Ex: Av. Beira Mar, 1000, Meireles, Fortaleza"
-              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+              placeholder="Ex: Av. Beira Mar, 1000, Fortaleza"
+              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
 
-          {erro && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm border border-red-100">
-              {erro}
-            </div>
-          )}
+          {erro && <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{erro}</div>}
 
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-4 rounded-xl text-white font-bold text-lg transition-all flex justify-center items-center ${
-              loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg"
+            className={`w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center ${
+              loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            {loading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processando IA e gerando PDF...
-              </>
-            ) : (
-              "Gerar Relatório Profissional"
-            )}
+            {loading ? "Mapeando região e redigindo laudo..." : "Gerar Relatório Profissional"}
           </button>
         </form>
       </div>
-      
-      <p className="mt-8 text-sm text-slate-400">
-        Ambiente Seguro B2B • Alimentado por Inteligência Artificial
-      </p>
     </div>
   );
 }
