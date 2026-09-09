@@ -22,7 +22,7 @@ export default function Home() {
     }
 
     const buscarSugestoes = async () => {
-      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const token = pk.eyJ1IjoibGVvYXlyZXMiLCJhIjoiY210dGdoOGpiMDhhbzJ4cHI2djNjYjczMSJ9.2tWcsKj8hwaSFHlkctl59g;
       if (!token) return;
 
       try {
