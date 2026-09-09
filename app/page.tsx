@@ -26,6 +26,11 @@ export default function Home() {
   const [sugestoes, setSugestoes] = useState<any[]>([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
 
+  // Estados da Barra de Progresso
+  const [progresso, setProgresso] = useState(0);
+  const [mensagemProgresso, setMensagemProgresso] = useState("");
+
+  // Estados de Resultado
   const [htmlPreview, setHtmlPreview] = useState("");
   const [pdfData, setPdfData] = useState("");
 
@@ -36,16 +41,15 @@ export default function Home() {
     const checarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        router.push("/login"); // Chuta para fora se não tiver logado
+        router.push("/login");
       } else {
-        setUsuarioEmail(session.user.email || ""); // Salva o email para mostrar na tela
-        setVerificandoAuth(false); // Libera o acesso à página
+        setUsuarioEmail(session.user.email || "");
+        setVerificandoAuth(false);
       }
     };
     checarSessao();
   }, [router]);
 
-  // Função de Deslogar
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -86,24 +90,59 @@ export default function Home() {
     e.preventDefault();
     if (!endereco) return setErro("Digite um endereço.");
     
-    setLoading(true); setErro("");
+    setLoading(true); 
+    setErro("");
     setMostrarSugestoes(false);
     
+    // Inicia a simulação de progresso
+    setProgresso(5);
+    setMensagemProgresso("Iniciando varredura de dados...");
+
+    const etapas = [
+      { prog: 20, msg: "Cruzando coordenadas geoespaciais via Mapbox API..." },
+      { prog: 40, msg: "Consultando risco hidrológico e topografia do terreno..." },
+      { prog: 65, msg: "Analisando malha comercial e infraestrutura no Google Places..." },
+      { prog: 85, msg: "Aplicando Inteligência Artificial (Gemini) na precificação..." },
+      { prog: 95, msg: "Renderizando Dossiê em formato PDF..." },
+    ];
+
+    let etapaAtual = 0;
+    
+    const intervaloProgresso = setInterval(() => {
+      if (etapaAtual < etapas.length) {
+        setProgresso(etapas[etapaAtual].prog);
+        setMensagemProgresso(etapas[etapaAtual].msg);
+        etapaAtual++;
+      }
+    }, 2000); // Avança de etapa a cada 2 segundos
+
     try {
       const resposta = await fetch("https://smartrs.onrender.com/gerar-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ endereco }),
       });
+      
       if (!resposta.ok) throw new Error("Falha ao gerar relatório.");
 
       const data = await resposta.json();
-      setHtmlPreview(data.html_preview);
-      setPdfData(data.pdf_base64);
+      
+      // Conclui o progresso
+      clearInterval(intervaloProgresso);
+      setProgresso(100);
+      setMensagemProgresso("Dossiê gerado com sucesso!");
+      
+      // Dá um micro delay só para o usuário ver que chegou a 100%
+      setTimeout(() => {
+        setHtmlPreview(data.html_preview);
+        setPdfData(data.pdf_base64);
+        setLoading(false);
+      }, 500);
+
     } catch (err: any) {
-      setErro(err.message);
-    } finally {
+      clearInterval(intervaloProgresso);
       setLoading(false);
+      setErro(err.message);
     }
   };
 
@@ -150,10 +189,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-8 font-sans">
       
-      {/* CABEÇALHO DO USUÁRIO COM BOTÃO SAIR */}
+      {/* CABEÇALHO DO USUÁRIO */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-8 px-4">
         <span className="text-sm font-medium text-slate-500">
-          Corretor: <strong className="text-slate-700">{usuarioEmail}</strong>
+          Usuário: <strong className="text-slate-700">{usuarioEmail}</strong>
         </span>
         <button 
           onClick={handleLogout}
@@ -180,7 +219,8 @@ export default function Home() {
                 setMostrarSugestoes(true);
               }}
               placeholder="Ex: Av. Beira Mar, 100, Fortaleza"
-              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-50"
+              disabled={loading}
             />
             
             {mostrarSugestoes && sugestoes.length > 0 && (
@@ -200,15 +240,28 @@ export default function Home() {
 
           {erro && <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{erro}</div>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center ${
-              loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            {loading ? "Mapeando região e redigindo laudo..." : "Gerar Relatório Profissional"}
-          </button>
+          {/* BARRA DE PROGRESSO OU BOTÃO DE AÇÃO */}
+          {loading ? (
+            <div className="w-full bg-slate-50 p-6 rounded-xl border border-slate-200">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-slate-600 animate-pulse">{mensagemProgresso}</span>
+                <span className="text-sm font-bold text-blue-600">{progresso}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-700 ease-out" 
+                  style={{ width: `${progresso}%` }}
+                ></div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
+              Gerar Relatório Profissional
+            </button>
+          )}
         </form>
       </div>
     </div>
