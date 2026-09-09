@@ -11,9 +11,25 @@ const supabase = createClient(
 );
 
 export default function Home() {
+  
+  const router = useRouter();
+  const [verificandoAuth, setVerificandoAuth] = useState(true);
+
+  // O Guarda-Costas: Verifica se o usuário está logado
+  useEffect(() => {
+    const checarSessao = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push("/login"); // Chuta para o login se não tiver conta
+      } else {
+        setVerificandoAuth(false); // Libera o acesso
+      }
+    };
+    checarSessao();
+  }, [router]);
+
+  // Restante dos seus estados (endereco, loading, erro, etc)...
   const [endereco, setEndereco] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [erro, setErro] = useState("");
   
   // Novos estados para o Autocomplete
   const [sugestoes, setSugestoes] = useState<any[]>([]);
