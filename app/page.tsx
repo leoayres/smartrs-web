@@ -49,10 +49,7 @@ export default function Home() {
     checarSessao();
   }, [router]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-  };
+
 
   // ==========================================
   // 2. LÓGICA DO AUTOCOMPLETE
@@ -165,28 +162,8 @@ export default function Home() {
   return (
     <div className="bg-gray-50 flex flex-col items-center pt-8 font-sans">
       
-      {/* CABEÇALHO DO USUÁRIO */}
-      <div className="w-full max-w-2xl flex justify-between items-center mb-8 px-4">
-        <div className="flex flex-col">
-          <span className="text-sm font-medium text-slate-500">Logado como:</span>
-          <strong className="text-slate-800">{usuarioEmail}</strong>
-        </div>
-        
-        <div className="flex gap-4 items-center">
-          <Link 
-            href="/meus-laudos" 
-            className="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold transition-colors"
-          >
-            📋 Meus Laudos
-          </Link>
-          <button 
-            onClick={handleLogout}
-            className="text-sm text-red-500 hover:text-red-700 font-semibold transition-colors"
-          >
-            Sair
-          </button>
-        </div>
-      </div>
+      
+     
 
       <div className="w-full max-w-2xl bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-10">
