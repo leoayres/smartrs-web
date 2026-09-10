@@ -123,11 +123,9 @@ export default function MeusLaudos() {
   return (
     <div className="bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Meus Laudos de Inteligência</h1>
-          <Link href="/" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md font-medium transition">
-            + Novo Laudo
-          </Link>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-800">Minha Vitrine de Laudos</h1>
+          <p className="text-gray-500 mt-2">Acompanhe o status dos vídeos 3D e as visualizações dos seus clientes.</p>
         </div>
         
         {laudos.length === 0 ? (
