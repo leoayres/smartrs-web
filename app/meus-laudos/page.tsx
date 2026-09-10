@@ -41,6 +41,7 @@ export default function MeusLaudos() {
     checarSessao();
   }, [router]);
 
+  // 1. CARREGA A LISTA INSTANTANEAMENTE DO BANCO DE DADOS
   useEffect(() => {
     if (!userId) return;
     const buscarLaudos = async () => {
@@ -57,6 +58,35 @@ export default function MeusLaudos() {
     };
     buscarLaudos();
   }, [userId]);
+
+  // 2. A MÁGICA: BACKGROUND POLLING PARA AUTO-CURA
+  // Roda de forma silenciosa e atualiza apenas os cards que terminaram de renderizar o vídeo
+  useEffect(() => {
+    const checarStatusPendentes = () => {
+      const pendentes = laudos.filter(l => l.status_video === 'PROCESSING');
+      
+      pendentes.forEach(async (laudo) => {
+        try {
+          const res = await fetch(`${API_URL}/laudos/${laudo.id}/status`);
+          if (res.ok) {
+            const data = await res.json();
+            // Se o Google terminou, a gente atualiza a cor do card na hora!
+            if (data.status_video !== 'PROCESSING') {
+              setLaudos(prevLaudos => 
+                prevLaudos.map(l => l.id === laudo.id ? { ...l, status_video: data.status_video } : l)
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Erro na verificação silenciosa:", err);
+        }
+      });
+    };
+
+    if (laudos.length > 0) {
+      checarStatusPendentes();
+    }
+  }, [laudos.length]); // Executa apenas uma vez após o carregamento da lista inicial
 
   const handleBaixarPdf = async (id: string, endereco: string) => {
     setBaixandoId(id);
@@ -158,7 +188,7 @@ export default function MeusLaudos() {
                             </span>
                         )}
                         
-                        {/* Status UNSUPPORTED: Agora é o Tour Interativo (CesiumJS)! */}
+                        {/* Status UNSUPPORTED: Tour Interativo (CesiumJS)! */}
                         {laudo.status_video === 'UNSUPPORTED' && (
                             <span className="inline-flex items-center gap-1.5 text-indigo-700 font-semibold" title="Motor interativo ativado para esta região">
                                 <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Tour Interativo
