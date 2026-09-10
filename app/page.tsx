@@ -96,19 +96,20 @@ export default function Home() {
     // Inicia a barra
     setProgresso(2);
     setMensagemProgresso("Iniciando varredura geoespacial...");
-
-    const etapas = [
-      { prog: 15, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
-      { prog: 28, msg: "Mapeando infraestrutura no Google Places...", tempo: 3500 },
-      { prog: 40, msg: "Calculando Walk Score e facilidades...", tempo: 5500 },
-      { prog: 52, msg: "Consultando topografia, relevo e face solar...", tempo: 7500 },
-      { prog: 63, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 9500 },
-      { prog: 71, msg: "Mapeando Telhado e Potencial Solar...", tempo: 11500 },
-      { prog: 78, msg: "Sincronizando satélites para Tour 3D (Aerial View)...", tempo: 13500 },
-      { prog: 85, msg: "Iniciando motor de Inteligência Artificial...", tempo: 16000 },
-      { prog: 92, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 20000 },
-      { prog: 96, msg: "Revisando gatilhos mentais e montando Laudo...", tempo: 25000 }
+const etapas = [
+      { prog: 12, msg: "Cruzando coordenadas espaciais...", tempo: 1500 },
+      { prog: 24, msg: "Minerando dados massivos de Geomarketing...", tempo: 3500 },
+      { prog: 35, msg: "Amostrando Ticket Médio e Qualificação (Rating)...", tempo: 5500 },
+      { prog: 46, msg: "Processando o Índice Vocacional da Vizinhança...", tempo: 7500 },
+      { prog: 55, msg: "Consultando topografia, relevo e face solar...", tempo: 9500 },
+      { prog: 63, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 11500 },
+      { prog: 70, msg: "Mapeando Telhado e Potencial Solar...", tempo: 13500 },
+      { prog: 78, msg: "Sincronizando satélites para Tour 3D (Aerial View)...", tempo: 15500 },
+      { prog: 85, msg: "Iniciando motor de Inteligência Artificial...", tempo: 18000 },
+      { prog: 92, msg: "Redigindo copy estratégico com gatilhos de escassez...", tempo: 21000 },
+      { prog: 97, msg: "Diagramando Dossiê e compilando Dashboard...", tempo: 25000 }
     ];
+
 
     const timeouts: any[] = [];
     
