@@ -158,12 +158,12 @@ export default function Home() {
 
   // TELA DE ESPERA: Enquanto checa o Supabase
   if (verificandoAuth) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-slate-500">Autenticando...</div>;
+    return <div className="bg-gray-50 flex items-center justify-center font-bold text-slate-500">Autenticando...</div>;
   }
 
   // TELA PRINCIPAL: Busca de Endereço
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-8 font-sans">
+    <div className="bg-gray-50 flex flex-col items-center pt-8 font-sans">
       
       {/* CABEÇALHO DO USUÁRIO */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-8 px-4">
