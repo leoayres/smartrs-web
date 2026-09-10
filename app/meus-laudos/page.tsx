@@ -104,7 +104,7 @@ export default function MeusLaudos() {
   // ==========================================
   if (loading) {
     return (
-      <div className="flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-xl text-gray-600 animate-pulse">Carregando sua vitrine de laudos...</p>
       </div>
     );
