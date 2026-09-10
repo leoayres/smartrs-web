@@ -104,7 +104,7 @@ export default function MeusLaudos() {
   // ==========================================
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center bg-gray-50">
         <p className="text-xl text-gray-600 animate-pulse">Carregando sua vitrine de laudos...</p>
       </div>
     );
@@ -112,7 +112,7 @@ export default function MeusLaudos() {
 
   if (erro) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center bg-gray-50">
         <div className="bg-red-50 text-red-600 p-6 rounded-lg shadow-sm border border-red-100">
           ⚠️ Ocorreu um erro: {erro}
         </div>
