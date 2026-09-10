@@ -31,11 +31,26 @@ export default function Header() {
     router.push("/login");
   };
 
-  // REGRA DE OURO: Ocultar o Header na tela de login e na tela do Laudo Público
+  // ==========================================
+  // HEADER PÚBLICO (Minimalista - Apenas Logo)
+  // Exibido no link do cliente final ou na tela de login
+  // ==========================================
   if (pathname === "/login" || pathname?.startsWith("/laudo/")) {
-    return null;
+    return (
+      <header className="bg-white border-b border-gray-200 py-5 shadow-sm w-full">
+        <div className="max-w-6xl mx-auto px-6 flex justify-center items-center">
+          {/* Usamos uma <div> ao invés de <Link> para evitar que o cliente final clique e saia do laudo acidentalmente */}
+          <div className="text-2xl font-black text-blue-900 tracking-tighter select-none">
+            SMART<span className="text-blue-500">RS</span>
+          </div>
+        </div>
+      </header>
+    );
   }
 
+  // ==========================================
+  // HEADER PRIVADO (Sistema Interno do Corretor)
+  // ==========================================
   return (
     <header className="bg-white border-b border-gray-200 py-4 shadow-sm w-full">
       <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
