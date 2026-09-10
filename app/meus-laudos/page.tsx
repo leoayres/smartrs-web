@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Eye, Clock, MapPin, Download, ExternalLink, RefreshCw, Archive, CheckCircle } from "lucide-react";
+import LoadingSteps from "../components/LoadingSteps";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -285,15 +286,14 @@ export default function MeusLaudos() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 md:p-8 relative overflow-hidden">
             
             {atualizando ? (
-              <div className="text-center py-12">
-                <RefreshCw className="animate-spin text-blue-600 mx-auto mb-6" size={48} />
-                <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">Reescrevendo Dossiê...</h3>
-                <p className="text-gray-500 text-sm md:text-base leading-relaxed">
-                  A Inteligência Artificial está reprocessando os dados geoespaciais e de mercado atualizados da região.<br/>
-                  <strong className="text-gray-700 block mt-2">Isso pode levar de 10 a 15 segundos.</strong>
-                </p>
-              </div>
+              <LoadingSteps 
+                titulo="Reescrevendo Dossiê..." 
+                subtitulo="A Inteligência Artificial está reprocessando os dados geoespaciais e de mercado atualizados da região." 
+              />
             ) : (
+              <>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Atualizar Dossiê de Inteligência</h2>
+                {/* ... (o resto dos botões de opções continuam iguais) ... */}
               <>
                 <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Atualizar Dossiê de Inteligência</h2>
                 <p className="text-gray-600 text-sm md:text-base mb-8">
