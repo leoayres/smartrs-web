@@ -289,6 +289,7 @@ export default function MeusLaudos() {
               <LoadingSteps 
                 titulo="Reescrevendo Dossiê..." 
                 subtitulo="A Inteligência Artificial está reprocessando os dados geoespaciais e de mercado atualizados da região." 
+                variant="progress"
               />
             ) : (
               <>
