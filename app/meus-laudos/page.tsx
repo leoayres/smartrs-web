@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+
+// 1. Inicializa o cliente do Supabase
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 // Tipagem TypeScript garantindo que o front-end saiba o formato dos dados
 interface Laudo {
@@ -13,18 +21,44 @@ interface Laudo {
 }
 
 export default function MeusLaudos() {
+  const router = useRouter();
+  
   const [laudos, setLaudos] = useState<Laudo[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState("");
-
-  // DICA: Em um cenário real, você pegaria este ID do sistema de login (ex: NextAuth, Firebase, Supabase Auth)
-  // Por enquanto, vamos usar um ID fixo ou pegar do LocalStorage se você já tiver isso implementado.
-  const userId = "usuario_teste_123"; 
   
-  // Lembre-se de trocar esta URL para a URL real do seu back-end no Render!
+  // Novo estado para guardar o ID do Supabase
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Lembre-se de verificar se essa é sua URL real no Render
   const API_URL = "https://smartrs.onrender.com";
 
+  // ==========================================
+  // ETAPA 1: GUARDA-COSTAS (Verifica quem está logado)
+  // ==========================================
   useEffect(() => {
+    const checarSessao = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // Se não tem sessão, expulsa para o login
+        router.push("/login");
+      } else {
+        // Se tem sessão, salva o ID do corretor
+        setUserId(session.user.id);
+      }
+    };
+
+    checarSessao();
+  }, [router]);
+
+  // ==========================================
+  // ETAPA 2: BUSCA OS LAUDOS (Só roda quando descobre o userId)
+  // ==========================================
+  useEffect(() => {
+    // Se ainda não temos o ID do usuário, não faz nada
+    if (!userId) return;
+
     const buscarLaudos = async () => {
       try {
         const resposta = await fetch(`${API_URL}/laudos/meus/${userId}`);
@@ -41,11 +75,15 @@ export default function MeusLaudos() {
     };
 
     buscarLaudos();
-  }, [userId]);
+  }, [userId]); // O gatilho desta função é a descoberta do userId
 
+
+  // ==========================================
+  // RENDERIZAÇÃO DA TELA
+  // ==========================================
   if (loading) {
     return (
-      <div className="flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <p className="text-xl text-gray-600 animate-pulse">Carregando sua vitrine de laudos...</p>
       </div>
     );
@@ -53,7 +91,7 @@ export default function MeusLaudos() {
 
   if (erro) {
     return (
-      <div className="flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-red-50 text-red-600 p-6 rounded-lg shadow-sm border border-red-100">
           ⚠️ Ocorreu um erro: {erro}
         </div>
@@ -122,7 +160,6 @@ export default function MeusLaudos() {
                       >
                         🔗 Link Público
                       </Link>
-                      {/* O botão de PDF seria ligado a uma rota futura do seu back-end para baixar novamente o PDF salvo */}
                       <button className="bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded text-sm font-medium transition">
                         Baixar PDF
                       </button>
