@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 
 // Inicializa o cliente do Supabase
@@ -16,6 +17,7 @@ export default function Home() {
   // Estados de Autenticação
   const [verificandoAuth, setVerificandoAuth] = useState(true);
   const [usuarioEmail, setUsuarioEmail] = useState("");
+  const [usuarioId, setUsuarioId] = useState(""); // NOVO: Precisamos do ID para o Banco de Dados
 
   // Estados do Dossiê
   const [endereco, setEndereco] = useState("");
@@ -30,10 +32,6 @@ export default function Home() {
   const [progresso, setProgresso] = useState(0);
   const [mensagemProgresso, setMensagemProgresso] = useState("");
 
-  // Estados de Resultado
-  const [htmlPreview, setHtmlPreview] = useState("");
-  const [pdfData, setPdfData] = useState("");
-
   // ==========================================
   // 1. GUARDA-COSTAS (Verifica se está logado)
   // ==========================================
@@ -44,6 +42,7 @@ export default function Home() {
         router.push("/login");
       } else {
         setUsuarioEmail(session.user.email || "");
+        setUsuarioId(session.user.id || ""); // Guarda o ID para enviar ao back-end
         setVerificandoAuth(false);
       }
     };
@@ -56,7 +55,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // 2. LÓGICA DO AUTOCOMPLETE E PDF
+  // 2. LÓGICA DO AUTOCOMPLETE
   // ==========================================
   useEffect(() => {
     if (endereco.length < 4) {
@@ -86,6 +85,9 @@ export default function Home() {
     setMostrarSugestoes(false);
   };
 
+  // ==========================================
+  // 3. COMANDO DE GERAÇÃO (INTEGRAÇÃO COM NOVO BACK-END)
+  // ==========================================
   const handleGerarPdf = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!endereco) return setErro("Digite um endereço.");
@@ -98,28 +100,21 @@ export default function Home() {
     setProgresso(2);
     setMensagemProgresso("Iniciando varredura geoespacial...");
 
-    // Cronograma rebalanceado: Tempos específicos para cada etapa (em milissegundos)
-    // Isso "mascara" o tempo real de 15 a 25s que a IA leva para escrever o copy.
-   // Cronograma rebalanceado com as novas requisições (AQI e Solar)
-  // Cronograma rebalanceado: 12 etapas para cobrir as integrações 3D
     const etapas = [
-      { prog: 12, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
-      { prog: 22, msg: "Mapeando infraestrutura no Google Places...", tempo: 3000 },
-      { prog: 32, msg: "Calculando Walk Score e proximidades...", tempo: 4500 },
-      { prog: 40, msg: "Consultando topografia e insolação...", tempo: 6000 },
-      { prog: 48, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 7500 },
-      { prog: 56, msg: "Mapeando Telhado e Potencial Solar Energético...", tempo: 9000 },
-      { prog: 65, msg: "Buscando tour 3D cinematográfico (Aerial View)...", tempo: 11000 },
-      { prog: 73, msg: "Analisando vocação turística e lazer...", tempo: 13000 },
-      { prog: 80, msg: "Iniciando motor de Inteligência Artificial (Gemini)...", tempo: 16000 },
-      { prog: 88, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 20000 },
-      { prog: 94, msg: "Revisando gatilhos mentais e processando mídias...", tempo: 25000 },
-      { prog: 98, msg: "Diagramando Dossiê final em formato PDF...", tempo: 30000 },
+      { prog: 15, msg: "Cruzando coordenadas no Mapbox API...", tempo: 1500 },
+      { prog: 28, msg: "Mapeando infraestrutura no Google Places...", tempo: 3500 },
+      { prog: 40, msg: "Calculando Walk Score e facilidades...", tempo: 5500 },
+      { prog: 52, msg: "Consultando topografia, relevo e face solar...", tempo: 7500 },
+      { prog: 63, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 9500 },
+      { prog: 71, msg: "Mapeando Telhado e Potencial Solar...", tempo: 11500 },
+      { prog: 78, msg: "Sincronizando satélites para Tour 3D (Aerial View)...", tempo: 13500 },
+      { prog: 85, msg: "Iniciando motor de Inteligência Artificial...", tempo: 16000 },
+      { prog: 92, msg: "Redigindo copy imobiliário de alto padrão...", tempo: 20000 },
+      { prog: 96, msg: "Revisando gatilhos mentais e montando Laudo...", tempo: 25000 }
     ];
 
     const timeouts: any[] = [];
     
-    // Dispara todas as mensagens nos tempos programados
     etapas.forEach((etapa) => {
       const timeout = setTimeout(() => {
         setProgresso(etapa.prog);
@@ -129,28 +124,26 @@ export default function Home() {
     });
 
     try {
-      const resposta = await fetch("https://smartrs.onrender.com/gerar-pdf", {
+      // ATUALIZAÇÃO 1: A Rota nova do Back-end
+      const resposta = await fetch("https://smartrs.onrender.com/laudos/gerar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ endereco }),
+        // ATUALIZAÇÃO 2: Enviamos o user_id para o banco de dados saber de quem é
+        body: JSON.stringify({ endereco: endereco, user_id: usuarioId }),
       });
       
-      if (!resposta.ok) throw new Error("Falha ao gerar relatório.");
+      if (!resposta.ok) throw new Error("Falha ao gerar o Laudo. Tente novamente.");
 
       const data = await resposta.json();
       
-      // Se o servidor for super rápido e terminar antes, cancelamos as mensagens que faltaram
       timeouts.forEach(clearTimeout);
-      
       setProgresso(100);
-      setMensagemProgresso("Dossiê gerado com sucesso!");
+      setMensagemProgresso("Dossiê gerado com sucesso! Redirecionando...");
       
-      // Um pequeno delay para o usuário ver o 100% antes da tela mudar
+      // ATUALIZAÇÃO 3: Redireciona o usuário para o painel de laudos
       setTimeout(() => {
-        setHtmlPreview(data.html_preview);
-        setPdfData(data.pdf_base64);
-        setLoading(false);
-      }, 800);
+        router.push("/meus-laudos");
+      }, 1500);
 
     } catch (err: any) {
       timeouts.forEach(clearTimeout);
@@ -159,43 +152,13 @@ export default function Home() {
     }
   };
 
-  const baixarPdf = () => {
-    const linkSource = `data:application/pdf;base64,${pdfData}`;
-    const downloadLink = document.createElement("a");
-    downloadLink.href = linkSource;
-    downloadLink.download = `Laudo_${endereco.substring(0, 15).replace(/\s+/g, '_')}.pdf`;
-    downloadLink.click();
-  };
-
   // ==========================================
-  // 3. RENDERIZAÇÃO DAS TELAS
+  // 4. RENDERIZAÇÃO DAS TELAS
   // ==========================================
 
   // TELA DE ESPERA: Enquanto checa o Supabase
   if (verificandoAuth) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center font-bold text-slate-500">Autenticando...</div>;
-  }
-
-  // TELA DE RESULTADO: Mostra o Dossiê
-  if (htmlPreview) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 font-sans">
-        <div className="w-full max-w-3xl bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-8 border-b pb-4">
-            <h2 className="text-xl font-bold text-slate-800">Preview do Laudo</h2>
-            <div className="flex gap-4">
-              <button onClick={() => { setHtmlPreview(""); setPdfData(""); setEndereco(""); }} className="text-slate-500 hover:text-slate-800 font-semibold px-4 py-2">
-                Novo Endereço
-              </button>
-              <button onClick={baixarPdf} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-all">
-                📥 Baixar PDF
-              </button>
-            </div>
-          </div>
-          <div dangerouslySetInnerHTML={{ __html: htmlPreview }} />
-        </div>
-      </div>
-    );
   }
 
   // TELA PRINCIPAL: Busca de Endereço
@@ -204,15 +167,25 @@ export default function Home() {
       
       {/* CABEÇALHO DO USUÁRIO */}
       <div className="w-full max-w-2xl flex justify-between items-center mb-8 px-4">
-        <span className="text-sm font-medium text-slate-500">
-          Usuário: <strong className="text-slate-700">{usuarioEmail}</strong>
-        </span>
-        <button 
-          onClick={handleLogout}
-          className="text-sm text-red-500 hover:text-red-700 font-semibold transition-colors"
-        >
-          Sair da conta
-        </button>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-slate-500">Logado como:</span>
+          <strong className="text-slate-800">{usuarioEmail}</strong>
+        </div>
+        
+        <div className="flex gap-4 items-center">
+          <Link 
+            href="/meus-laudos" 
+            className="text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg font-semibold transition-colors"
+          >
+            📋 Meus Laudos
+          </Link>
+          <button 
+            onClick={handleLogout}
+            className="text-sm text-red-500 hover:text-red-700 font-semibold transition-colors"
+          >
+            Sair
+          </button>
+        </div>
       </div>
 
       <div className="w-full max-w-2xl bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
@@ -270,7 +243,7 @@ export default function Home() {
           ) : (
             <button
               type="submit"
-              className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-colors"
+              className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
             >
               Gerar Relatório Profissional
             </button>
