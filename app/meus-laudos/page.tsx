@@ -45,7 +45,7 @@ export default function MeusLaudos() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center bg-gray-50">
         <p className="text-xl text-gray-600 animate-pulse">Carregando sua vitrine de laudos...</p>
       </div>
     );
@@ -53,7 +53,7 @@ export default function MeusLaudos() {
 
   if (erro) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center bg-gray-50">
         <div className="bg-red-50 text-red-600 p-6 rounded-lg shadow-sm border border-red-100">
           ⚠️ Ocorreu um erro: {erro}
         </div>
@@ -62,7 +62,7 @@ export default function MeusLaudos() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="bg-gray-50 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Meus Laudos de Inteligência</h1>
