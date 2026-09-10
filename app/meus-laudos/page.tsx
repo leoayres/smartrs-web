@@ -33,6 +33,27 @@ export default function MeusLaudos() {
   // Lembre-se de verificar se essa é sua URL real no Render
   const API_URL = "https://smartrs.onrender.com";
 
+  const [baixandoId, setBaixandoId] = useState<string | null>(null);
+
+  // Adicione esta função logo acima do return()
+  const handleBaixarPdf = async (id: string, endereco: string) => {
+    setBaixandoId(id); // Muda o botão para "Gerando..."
+    try {
+      const res = await fetch(`${API_URL}/laudos/${id}/pdf`);
+      if (!res.ok) throw new Error("Erro ao gerar PDF.");
+      const data = await res.json();
+      
+      const linkSource = `data:application/pdf;base64,${data.pdf_base64}`;
+      const downloadLink = document.createElement("a");
+      downloadLink.href = linkSource;
+      downloadLink.download = `Dossie_${endereco.substring(0, 15).replace(/\s+/g, '_')}.pdf`;
+      downloadLink.click();
+    } catch (error) {
+      alert("Erro ao baixar o PDF. Tente novamente.");
+    } finally {
+      setBaixandoId(null);
+    }
+  };
   // ==========================================
   // ETAPA 1: GUARDA-COSTAS (Verifica quem está logado)
   // ==========================================
@@ -160,9 +181,12 @@ export default function MeusLaudos() {
                       >
                         🔗 Link Público
                       </Link>
-                      <button className="bg-gray-800 hover:bg-gray-900 text-white px-3 py-1.5 rounded text-sm font-medium transition">
-                        Baixar PDF
-                      </button>
+                  <button 
+                        onClick={() => handleBaixarPdf(laudo.id, laudo.endereco)}
+                    disabled={baixandoId === laudo.id}
+                  className="bg-gray-800 hover:bg-gray-900 disabled:bg-gray-400 text-white px-3 py-1.5 rounded text-sm font-medium transition">
+                  {baixandoId === laudo.id ? "Gerando..." : "Baixar PDF"}
+                  </button>
                     </td>
                   </tr>
                 ))}
