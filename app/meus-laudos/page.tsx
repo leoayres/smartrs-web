@@ -293,9 +293,6 @@ export default function MeusLaudos() {
             ) : (
               <>
                 <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Atualizar Dossiê de Inteligência</h2>
-                {/* ... (o resto dos botões de opções continuam iguais) ... */}
-              <>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Atualizar Dossiê de Inteligência</h2>
                 <p className="text-gray-600 text-sm md:text-base mb-8">
                   Você está prestes a gerar uma versão atualizada deste estudo. Como você deseja gerenciar os links de compartilhamento?
                 </p>
