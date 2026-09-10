@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
+
+// Importando nosso novo e poderoso componente centralizado!
+import LoadingSteps from "./components/LoadingSteps";
 
 // Inicializa o cliente do Supabase
 const supabase = createClient(
@@ -17,7 +19,7 @@ export default function Home() {
   // Estados de Autenticação
   const [verificandoAuth, setVerificandoAuth] = useState(true);
   const [usuarioEmail, setUsuarioEmail] = useState("");
-  const [usuarioId, setUsuarioId] = useState(""); // NOVO: Precisamos do ID para o Banco de Dados
+  const [usuarioId, setUsuarioId] = useState(""); 
 
   // Estados do Dossiê
   const [endereco, setEndereco] = useState("");
@@ -27,10 +29,6 @@ export default function Home() {
   // Estados do Autocomplete
   const [sugestoes, setSugestoes] = useState<any[]>([]);
   const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
-
-  // Estados da Barra de Progresso
-  const [progresso, setProgresso] = useState(0);
-  const [mensagemProgresso, setMensagemProgresso] = useState("");
 
   // ==========================================
   // 1. GUARDA-COSTAS (Verifica se está logado)
@@ -42,14 +40,12 @@ export default function Home() {
         router.push("/login");
       } else {
         setUsuarioEmail(session.user.email || "");
-        setUsuarioId(session.user.id || ""); // Guarda o ID para enviar ao back-end
+        setUsuarioId(session.user.id || "");
         setVerificandoAuth(false);
       }
     };
     checarSessao();
   }, [router]);
-
-
 
   // ==========================================
   // 2. LÓGICA DO AUTOCOMPLETE
@@ -83,7 +79,7 @@ export default function Home() {
   };
 
   // ==========================================
-  // 3. COMANDO DE GERAÇÃO (INTEGRAÇÃO COM NOVO BACK-END)
+  // 3. COMANDO DE GERAÇÃO
   // ==========================================
   const handleGerarPdf = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,58 +89,19 @@ export default function Home() {
     setErro("");
     setMostrarSugestoes(false);
     
-    // Inicia a barra
-    setProgresso(2);
-    setMensagemProgresso("Iniciando varredura geoespacial...");
-const etapas = [
-      { prog: 12, msg: "Cruzando coordenadas espaciais...", tempo: 1500 },
-      { prog: 24, msg: "Minerando dados massivos de Geomarketing...", tempo: 3500 },
-      { prog: 35, msg: "Amostrando Ticket Médio e Qualificação (Rating)...", tempo: 5500 },
-      { prog: 46, msg: "Processando o Índice Vocacional da Vizinhança...", tempo: 7500 },
-      { prog: 55, msg: "Consultando topografia, relevo e face solar...", tempo: 9500 },
-      { prog: 63, msg: "Analisando Qualidade do Ar (AQI)...", tempo: 11500 },
-      { prog: 70, msg: "Mapeando Telhado e Potencial Solar...", tempo: 13500 },
-      { prog: 78, msg: "Sincronizando satélites para Tour 3D (Aerial View)...", tempo: 15500 },
-      { prog: 85, msg: "Iniciando motor de Inteligência Artificial...", tempo: 18000 },
-      { prog: 92, msg: "Redigindo copy estratégico com gatilhos de escassez...", tempo: 21000 },
-      { prog: 97, msg: "Diagramando Dossiê e compilando Dashboard...", tempo: 25000 }
-    ];
-
-
-    const timeouts: any[] = [];
-    
-    etapas.forEach((etapa) => {
-      const timeout = setTimeout(() => {
-        setProgresso(etapa.prog);
-        setMensagemProgresso(etapa.msg);
-      }, etapa.tempo);
-      timeouts.push(timeout);
-    });
-
     try {
-      // ATUALIZAÇÃO 1: A Rota nova do Back-end
       const resposta = await fetch("https://smartrs.onrender.com/laudos/gerar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // ATUALIZAÇÃO 2: Enviamos o user_id para o banco de dados saber de quem é
         body: JSON.stringify({ endereco: endereco, user_id: usuarioId }),
       });
       
       if (!resposta.ok) throw new Error("Falha ao gerar o Laudo. Tente novamente.");
 
-      const data = await resposta.json();
-      
-      timeouts.forEach(clearTimeout);
-      setProgresso(100);
-      setMensagemProgresso("Dossiê gerado com sucesso! Redirecionando...");
-      
-      // ATUALIZAÇÃO 3: Redireciona o usuário para o painel de laudos
-      setTimeout(() => {
-        router.push("/meus-laudos");
-      }, 1500);
+      // Se deu tudo certo, redireciona para a vitrine
+      router.push("/meus-laudos");
 
     } catch (err: any) {
-      timeouts.forEach(clearTimeout);
       setLoading(false);
       setErro(err.message);
     }
@@ -154,22 +111,32 @@ const etapas = [
   // 4. RENDERIZAÇÃO DAS TELAS
   // ==========================================
 
-  // TELA DE ESPERA: Enquanto checa o Supabase
   if (verificandoAuth) {
-    return <div className="bg-gray-50 flex items-center justify-center font-bold text-slate-500">Autenticando...</div>;
+    return <div className="bg-gray-50 flex items-center justify-center font-bold text-slate-500 min-h-screen">Autenticando...</div>;
+  }
+
+  // TELA DE LOADING DA GERAÇÃO (Usando o Componente Centralizado)
+  if (loading) {
+    return (
+      <div className="bg-gray-50 flex flex-col items-center justify-center min-h-screen font-sans p-4">
+        <div className="w-full max-w-2xl bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
+          <LoadingSteps 
+            titulo="Gerando Dossiê de Inteligência..." 
+            subtitulo="Nossa Inteligência Artificial está vasculhando bancos de dados imobiliários, climáticos e geoespaciais em tempo real." 
+            variant="list" 
+          />
+        </div>
+      </div>
+    );
   }
 
   // TELA PRINCIPAL: Busca de Endereço
   return (
-    <div className="bg-gray-50 flex flex-col items-center pt-8 font-sans">
-      
-      
-     
-
-      <div className="w-full max-w-2xl bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-gray-50 flex flex-col items-center pt-8 md:pt-16 min-h-screen font-sans p-4">
+      <div className="w-full max-w-2xl bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-slate-800 mb-3">Dossiê Climático & Valorização</h1>
-          <p className="text-slate-500">Gere laudos impressionantes e feche vendas mais rápido.</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Dossiê Climático & Valorização</h1>
+          <p className="text-slate-500 text-sm md:text-base">Gere laudos impressionantes e feche vendas de alto padrão mais rápido.</p>
         </div>
 
         <form onSubmit={handleGerarPdf} className="space-y-6">
@@ -183,17 +150,16 @@ const etapas = [
                 setMostrarSugestoes(true);
               }}
               placeholder="Ex: Av. Beira Mar, 100, Fortaleza"
-              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-50"
-              disabled={loading}
+              className="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
             />
             
             {mostrarSugestoes && sugestoes.length > 0 && (
-              <ul className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+              <ul className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
                 {sugestoes.map((sugestao) => (
                   <li 
                     key={sugestao.id}
                     onClick={() => handleSelecionarSugestao(sugestao.place_name)}
-                    className="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 text-sm text-slate-700 last:border-b-0"
+                    className="p-4 hover:bg-blue-50 cursor-pointer border-b border-slate-100 text-sm text-slate-700 font-medium last:border-b-0 transition-colors"
                   >
                     {sugestao.place_name}
                   </li>
@@ -202,30 +168,18 @@ const etapas = [
             )}
           </div>
 
-          {erro && <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">{erro}</div>}
-
-          {/* BARRA DE PROGRESSO OU BOTÃO DE AÇÃO */}
-          {loading ? (
-            <div className="w-full bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-slate-600 animate-pulse">{mensagemProgresso}</span>
-                <span className="text-sm font-bold text-blue-600">{progresso}%</span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-700 ease-out" 
-                  style={{ width: `${progresso}%` }}
-                ></div>
-              </div>
+          {erro && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 flex items-center gap-2">
+              ⚠️ {erro}
             </div>
-          ) : (
-            <button
-              type="submit"
-              className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-            >
-              Gerar Relatório Profissional
-            </button>
           )}
+
+          <button
+            type="submit"
+            className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5"
+          >
+            Gerar Relatório Profissional
+          </button>
         </form>
       </div>
     </div>
