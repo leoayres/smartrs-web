@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Footer from "@/app/components/Footer";
+import Header from "./components/Header"; // <-- NOVO IMPORT
+import Footer from "./components/Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SmartRS | Dossiê Imobiliário",
-  description: "Plataforma de Inteligência e Valorização Imobiliária",
+  title: "SmartRS | Inteligência Imobiliária",
+  description: "Dossiês climáticos e de valorização de alto padrão.",
 };
 
 export default function RootLayout({
@@ -17,15 +18,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      {/* 2. ADICIONAMOS FLEXBOX NO BODY PARA EMPURRAR O FOOTER PRO FINAL */}
       <body className={`${inter.className} flex flex-col min-h-screen bg-gray-50`}>
         
-        {/* 3. O CONTEÚDO PRINCIPAL (As páginas vão renderizar aqui dentro) */}
+        {/* CABEÇALHO GLOBAL */}
+        <Header />
+        
         <main className="flex-grow">
           {children}
         </main>
 
-        {/* 4. O NOSSO FOOTER NO FINAL DE TUDO */}
         <Footer />
         
       </body>
