@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { Eye, Clock, MapPin, Download, ExternalLink } from "lucide-react"; // Importando ícones úteis
+import { Eye, Clock, MapPin, Download, ExternalLink } from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,7 +100,7 @@ export default function MeusLaudos() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 md:mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Minha Vitrine de Laudos</h1>
-          <p className="text-sm md:text-base text-gray-500 mt-1 md:mt-2">Acompanhe o status dos vídeos 3D e as visualizações dos seus clientes.</p>
+          <p className="text-sm md:text-base text-gray-500 mt-1 md:mt-2">Acompanhe o status da renderização 3D e as visualizações dos seus clientes.</p>
         </div>
         
         {laudos.length === 0 ? (
@@ -142,20 +142,26 @@ export default function MeusLaudos() {
                     </div>
 
                     <div className="bg-gray-50 rounded-lg p-3 text-xs md:text-sm border border-gray-100">
-                        <span className="block text-gray-500 mb-1 font-medium text-xs">Status do Tour 3D</span>
+                        <span className="block text-gray-500 mb-1 font-medium text-xs uppercase tracking-wider">Motor 3D</span>
+                        
+                        {/* Status ACTIVE: Vídeo Cinematográfico Pronto */}
                         {laudo.status_video === 'ACTIVE' && (
                             <span className="inline-flex items-center gap-1.5 text-green-700 font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Disponível
+                                <span className="w-2 h-2 rounded-full bg-green-500"></span> Vídeo Cinematográfico
                             </span>
                         )}
+                        
+                        {/* Status PROCESSING: Google ainda está gerando o vídeo */}
                         {laudo.status_video === 'PROCESSING' && (
-                            <span className="inline-flex items-center gap-1.5 text-yellow-700 font-semibold" title="Processamento em andamento (2 a 24h)">
-                                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> Em Processamento
+                            <span className="inline-flex items-center gap-1.5 text-yellow-700 font-semibold" title="O Google está renderizando o vídeo">
+                                <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></span> Renderizando Vídeo...
                             </span>
                         )}
+                        
+                        {/* Status UNSUPPORTED: Agora é o Tour Interativo (CesiumJS)! */}
                         {laudo.status_video === 'UNSUPPORTED' && (
-                            <span className="inline-flex items-center gap-1.5 text-gray-500 font-medium">
-                                <span className="w-2 h-2 rounded-full bg-gray-400"></span> Indisponível
+                            <span className="inline-flex items-center gap-1.5 text-indigo-700 font-semibold" title="Motor interativo ativado para esta região">
+                                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Tour Interativo
                             </span>
                         )}
                     </div>
