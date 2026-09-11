@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 export default function LaudoPublico() {
   const params = useParams();
   const laudoId = params.id as string;
