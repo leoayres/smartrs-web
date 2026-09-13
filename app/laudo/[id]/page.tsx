@@ -9,23 +9,33 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Tipagem flexível para aceitar tanto Next 14 quanto o novo Next 15 (Promise)
 type Props = {
   params: Promise<{ id: string }> | { id: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // O await garante que o ID seja lido corretamente nas versões novas do Next.js
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
-  const { data: laudo } = await supabase
+  // Busca a linha inteira para evitar erro de nome de coluna
+  const { data: laudo, error } = await supabase
     .from("laudos")
-    .select("dados_geo")
+    .select("*")
     .eq("id", id)
     .single();
 
-  const endereco = laudo?.dados_geo?.endereco_analisado || "Ativo Imobiliário Exclusivo";
+  if (error) {
+    console.error("Erro ao ler Supabase no Metadata:", error.message);
+  }
+
+  // Tenta achar o endereço em diferentes formatos que seu banco possa estar usando
+  const endereco = laudo?.dados_geo?.endereco_analisado 
+                || laudo?.dados?.endereco_analisado 
+                || laudo?.endereco 
+                || "Ativo Imobiliário Exclusivo";
+
+  // Monta a URL base dinamicamente para evitar erro de caminhos relativos na imagem
+  const baseUrl = "https://smartrs-web.vercel.app";
 
   return {
     title: `Dossiê: ${endereco} | SmartRS`,
@@ -33,11 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: `Dossiê Institucional: ${endereco}`,
       description: "Auditoria de precificação, valuation de mercado e inteligência geoespacial.",
-      url: `https://smartrs-web.vercel.app/laudo/${id}`,
+      url: `${baseUrl}/laudo/${id}`,
       siteName: "SmartRS",
       images: [
         {
-          url: "https://smartrs-web.vercel.app/og-image.jpg",
+          url: `${baseUrl}/og-image.jpg`,
           width: 1200,
           height: 630,
           alt: `Dossiê SmartRS - ${endereco}`,
@@ -50,6 +60,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function LaudoPublicoPage() {
-  // Renderiza o cliente. Ele mesmo puxa o ID pela URL.
   return <LaudoClient />;
 }
