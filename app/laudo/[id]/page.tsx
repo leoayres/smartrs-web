@@ -36,24 +36,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const baseUrl = "https://smartrs-web.vercel.app";
 
+
+
   return {
+    metadataBase: new URL(baseUrl),
     title: `Dossiê: ${endereco} | SmartRS`,
     description: "Acesse a auditoria de precificação, valuation de mercado e visão geoespacial interativa deste ativo.",
     openGraph: {
       title: `Dossiê Institucional: ${endereco}`,
       description: "Auditoria de precificação, valuation de mercado e inteligência geoespacial.",
-      url: `${baseUrl}/laudo/${id}`,
+      url: `/laudo/${id}`,
       siteName: "SmartRS",
       images: [
         {
-          url: `${baseUrl}/og-image.jpg`,
+          url: "/og-image.jpg", // Com o metadataBase, a Vercel resolve o caminho perfeitamente
           width: 1200,
           height: 630,
-          alt: `Dossiê SmartRS - ${endereco}`,
+          alt: `Dossiê SmartRS`,
         },
       ],
       locale: "pt_BR",
       type: "article",
+    },
+    // O WhatsApp e o iMessage frequentemente olham a tag do Twitter se a do OpenGraph falhar
+    twitter: {
+      card: "summary_large_image",
+      title: `Dossiê Institucional: ${endereco}`,
+      description: "Auditoria de precificação, valuation de mercado e inteligência geoespacial.",
+      images: ["/og-image.jpg"],
     },
   };
 }
