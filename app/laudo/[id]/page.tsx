@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const resolvedParams = await params;
   const id = resolvedParams.id;
 
-  // Busca a linha inteira para evitar erro de nome de coluna
+  // CORRIGIDO: Agora aponta para a tabela correta 'meus_laudos'
   const { data: laudo, error } = await supabase
     .from("meus_laudos")
     .select("*")
@@ -28,13 +28,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     console.error("Erro ao ler Supabase no Metadata:", error.message);
   }
 
-  // Tenta achar o endereço em diferentes formatos que seu banco possa estar usando
+  // Busca o endereço dinamicamente
   const endereco = laudo?.dados_geo?.endereco_analisado 
                 || laudo?.dados?.endereco_analisado 
                 || laudo?.endereco 
                 || "Ativo Imobiliário Exclusivo";
 
-  // Monta a URL base dinamicamente para evitar erro de caminhos relativos na imagem
   const baseUrl = "https://smartrs-web.vercel.app";
 
   return {
