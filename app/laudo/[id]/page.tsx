@@ -2,31 +2,29 @@ import { Metadata } from "next";
 import { createClient } from "@supabase/supabase-js";
 import LaudoClient from "./LaudoClient";
 
-// 1. Força a rota a ser dinâmica (não fazer cache estático)
 export const dynamic = 'force-dynamic';
 
-// 2. Inicializa o Supabase (lado do Servidor)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Tipagem flexível para aceitar tanto Next 14 quanto o novo Next 15 (Promise)
 type Props = {
-  params: { id: string };
+  params: Promise<{ id: string }> | { id: string };
 };
 
-// 3. GERAÇÃO DINÂMICA DAS TAGS PARA O WHATSAPP/LINKEDIN
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const id = params.id;
+  // O await garante que o ID seja lido corretamente nas versões novas do Next.js
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
 
-  // Busca o endereço do laudo no Supabase de forma super rápida
   const { data: laudo } = await supabase
     .from("laudos")
     .select("dados_geo")
     .eq("id", id)
     .single();
 
-  // Se não encontrar o endereço, usa um texto genérico premium
   const endereco = laudo?.dados_geo?.endereco_analisado || "Ativo Imobiliário Exclusivo";
 
   return {
@@ -39,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       siteName: "SmartRS",
       images: [
         {
-          url: "https://smartrs-web.vercel.app/og-image.jpg", // Lembre-se de colocar essa imagem na pasta /public
+          url: "https://smartrs-web.vercel.app/og-image.jpg",
           width: 1200,
           height: 630,
           alt: `Dossiê SmartRS - ${endereco}`,
@@ -51,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// 4. RENDERIZA A PÁGINA EM SI CHAMANDO O COMPONENTE CLIENTE
-export default function LaudoPublicoPage({ params }: Props) {
-  return <LaudoClient laudoId={params.id} />;
+export default function LaudoPublicoPage() {
+  // Renderiza o cliente. Ele mesmo puxa o ID pela URL.
+  return <LaudoClient />;
 }
