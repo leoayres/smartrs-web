@@ -8,7 +8,23 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "SmartRS | Inteligência Imobiliária",
-  description: "Dossiês climáticos e de valorização de alto padrão.",
+  description: "Plataforma institucional de valuation, auditoria de precificação e análise geoespacial de ativos imobiliários.",
+  openGraph: {
+    title: "SmartRS | Inteligência Imobiliária",
+    description: "Plataforma institucional de valuation, auditoria de precificação e análise geoespacial.",
+    url: "https://smartrs-web.vercel.app",
+    siteName: "SmartRS",
+    images: [
+      {
+        url: "https://smartrs-web.vercel.app/og-image.jpg", // A imagem que você colocou no /public
+        width: 1200,
+        height: 630,
+        alt: "Dossiê SmartRS",
+      },
+    ],
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
