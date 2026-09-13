@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   // Busca a linha inteira para evitar erro de nome de coluna
   const { data: laudo, error } = await supabase
-    .from("laudos")
+    .from("meus_laudos")
     .select("*")
     .eq("id", id)
     .single();
