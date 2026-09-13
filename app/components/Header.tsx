@@ -39,9 +39,9 @@ export default function Header() {
     return (
       <header className="bg-white border-b border-gray-200 py-5 shadow-sm w-full">
         <div className="max-w-6xl mx-auto px-6 flex justify-center items-center">
-          <div className="text-2xl font-black text-blue-900 tracking-tighter select-none">
+          <Link href="/" className="text-2xl font-black text-blue-900 tracking-tighter" select-none>
             SMART<span className="text-blue-500">RS</span>
-          </div>
+          </Link>
         </div>
       </header>
     );
