@@ -1,66 +1,57 @@
-"use client";
+import { Metadata } from "next";
+import { createClient } from "@supabase/supabase-js";
+import LaudoClient from "./LaudoClient";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-
+// 1. Força a rota a ser dinâmica (não fazer cache estático)
 export const dynamic = 'force-dynamic';
 
-export default function LaudoPublico() {
-  const params = useParams();
-  const laudoId = params.id as string;
-  
-  const [html, setHtml] = useState("");
-  const [views, setViews] = useState(0);
-  const [erro, setErro] = useState("");
+// 2. Inicializa o Supabase (lado do Servidor)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-  useEffect(() => {
-    const fetchLaudo = async () => {
-      try {
-        const res = await fetch(`https://smartrs.onrender.com/laudos/virtual/${laudoId}`);
-        if (!res.ok) throw new Error("Laudo não encontrado ou indisponível.");
-        
-        const data = await res.json();
-        setHtml(data.html_completo);
-        setViews(data.estatisticas.visualizacoes);
-      } catch (e: any) {
-        setErro(e.message);
-      }
-    };
+type Props = {
+  params: { id: string };
+};
 
-    fetchLaudo();
-  }, [laudoId]);
+// 3. GERAÇÃO DINÂMICA DAS TAGS PARA O WHATSAPP/LINKEDIN
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const id = params.id;
 
-  if (erro) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 text-red-600 p-8 rounded-xl font-bold border border-red-100 shadow-sm text-center">
-          ⚠️ {erro}
-        </div>
-      </div>
-    );
-  }
+  // Busca o endereço do laudo no Supabase de forma super rápida
+  const { data: laudo } = await supabase
+    .from("laudos")
+    .select("dados_geo")
+    .eq("id", id)
+    .single();
 
-  if (!html) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-blue-600 animate-pulse font-medium">Carregando Dossiê Digital...</div>
-      </div>
-    );
-  }
+  // Se não encontrar o endereço, usa um texto genérico premium
+  const endereco = laudo?.dados_geo?.endereco_analisado || "Ativo Imobiliário Exclusivo";
 
-  return (
-    <div className="bg-gray-50 flex flex-col items-center py-12 font-sans">
-      <div className="w-full max-w-4xl bg-white p-8 md:p-14 rounded-2xl shadow-lg border border-gray-100 relative">
-        
-        {/* Etiqueta de Visualizações no canto superior */}
-        <div className="absolute top-6 right-6 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm flex items-center gap-2">
-          👁️ {views} {views === 1 ? "visualização" : "visualizações"}
-        </div>
+  return {
+    title: `Dossiê: ${endereco} | SmartRS`,
+    description: "Acesse a auditoria de precificação, valuation de mercado e visão geoespacial interativa deste ativo.",
+    openGraph: {
+      title: `Dossiê Institucional: ${endereco}`,
+      description: "Auditoria de precificação, valuation de mercado e inteligência geoespacial.",
+      url: `https://smartrs-web.vercel.app/laudo/${id}`,
+      siteName: "SmartRS",
+      images: [
+        {
+          url: "https://smartrs-web.vercel.app/og-image.jpg", // Lembre-se de colocar essa imagem na pasta /public
+          width: 1200,
+          height: 630,
+          alt: `Dossiê SmartRS - ${endereco}`,
+        },
+      ],
+      locale: "pt_BR",
+      type: "article",
+    },
+  };
+}
 
-        {/* Renderiza o Laudo Completo vindo do Back-end */}
-        <div dangerouslySetInnerHTML={{ __html: html }} />
-        
-      </div>
-    </div>
-  );
+// 4. RENDERIZA A PÁGINA EM SI CHAMANDO O COMPONENTE CLIENTE
+export default function LaudoPublicoPage({ params }: Props) {
+  return <LaudoClient laudoId={params.id} />;
 }
