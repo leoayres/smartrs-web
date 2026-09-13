@@ -135,8 +135,8 @@ export default function Home() {
     <div className="bg-gray-50 flex flex-col items-center pt-8 md:pt-16 min-h-screen font-sans p-4">
       <div className="w-full max-w-2xl bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Dossiê Climático & Valorização</h1>
-          <p className="text-slate-500 text-sm md:text-base">Gere laudos impressionantes e feche vendas de alto padrão mais rápido.</p>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Dossiê de Inteligência Imobiliária</h1>
+          <p className="text-slate-500 text-sm md:text-base">Transforme endereços em dossiês auditáveis com precificação em tempo real, cálculo de Yield e análise urbana inteligente.</p>
         </div>
 
         <form onSubmit={handleGerarPdf} className="space-y-6">
