@@ -178,7 +178,7 @@ export default function Home() {
             type="submit"
             className="w-full py-4 rounded-xl text-white font-bold text-lg flex justify-center items-center bg-blue-600 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 hover:shadow-blue-300 hover:-translate-y-0.5"
           >
-            Gerar Relatório Profissional
+            Gerar Dossiê de Inteligência
           </button>
         </form>
       </div>
