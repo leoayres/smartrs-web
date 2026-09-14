@@ -30,7 +30,7 @@ export default function LoadingSteps({
   const [etapaAtual, setEtapaAtual] = useState(0);
 
   useEffect(() => {
-    const tempoPorEtapa = 30000 / ETAPAS_PROCESSAMENTO.length; 
+    const tempoPorEtapa = 40000 / ETAPAS_PROCESSAMENTO.length; 
     
     const intervalo = setInterval(() => {
       setEtapaAtual((prev) => {
