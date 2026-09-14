@@ -106,15 +106,16 @@ export default function ContaPage() {
     setMensagem({ texto: "", tipo: "" });
 
     try {
-      // 1. Atualiza dados públicos na tabela 'usuarios'
-      const { error: usuarioError } = await supabase.from("usuarios").upsert({
-        id: usuarioId,
-        nome,
-        whatsapp,
-        creci,
-        avatar_url: avatarUrl,
-        updated_at: new Date(),
-      });
+     // 1. Atualiza dados públicos na tabela 'usuarios' (Usando UPDATE para não esbarrar na trava do CPF)
+      const { error: usuarioError } = await supabase.from("usuarios")
+        .update({
+          nome,
+          whatsapp,
+          creci,
+          avatar_url: avatarUrl,
+          updated_at: new Date(),
+        })
+        .eq("id", usuarioId);
 
       if (usuarioError) throw usuarioError;
 
