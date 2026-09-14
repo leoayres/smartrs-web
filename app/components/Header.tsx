@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { Menu, X } from "lucide-react"; // Ícones para o menu mobile
+import { Menu, X, Settings } from "lucide-react"; // Importamos o ícone Settings (Engrenagem)
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +39,7 @@ export default function Header() {
     return (
       <header className="bg-white border-b border-gray-200 py-5 shadow-sm w-full">
         <div className="max-w-6xl mx-auto px-6 flex justify-center items-center">
-          <Link href="/" className="text-2xl font-black text-blue-900 tracking-tighter" select-none>
+          <Link href="/" className="text-2xl font-black text-blue-900 tracking-tighter" select-none="true">
             SMART<span className="text-blue-500">RS</span>
           </Link>
         </div>
@@ -74,8 +74,15 @@ export default function Header() {
             <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Corretor Logado</span>
             <strong className="text-sm text-slate-700">{usuarioEmail}</strong>
           </div>
+          
           <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
           
+          {/* Botão Minha Conta (Desktop) */}
+          <Link href="/conta" className="hidden md:flex items-center gap-2 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg font-bold transition-colors">
+            <Settings size={16} />
+            Conta
+          </Link>
+
           <button onClick={handleLogout} className="hidden md:block text-sm bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg font-bold transition-colors">
             Sair
           </button>
@@ -100,6 +107,14 @@ export default function Header() {
             <Link href="/meus-laudos" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/meus-laudos" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               Meus Laudos
             </Link>
+            
+            <div className="w-full h-px bg-gray-100 my-1"></div>
+
+            <Link href="/conta" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 text-base font-semibold transition-colors ${pathname === "/conta" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
+              <Settings size={18} />
+              Minha Conta
+            </Link>
+
             <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="mt-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 w-full py-3 rounded-lg font-bold transition-colors text-center">
               Sair da Conta
             </button>
