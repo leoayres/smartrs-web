@@ -32,7 +32,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
-  const [showResend, setShowResend] = useState(false); // NOVO: Controle do botão de reenvio
+  const [showResend, setShowResend] = useState(false); 
 
   // Campos do Formulário
   const [email, setEmail] = useState("");
@@ -52,17 +52,22 @@ export default function Login() {
     try {
       if (isLogin) {
         // ==========================================
-        // LÓGICA DE LOGIN
+        // LÓGICA DE LOGIN (BLINDADA CONTRA MÁSCARAS DO SUPABASE)
         // ==========================================
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
         if (error) {
-          // Intercepta o erro de e-mail não confirmado
-          if (error.message.includes("Email not confirmed")) {
-            setShowResend(true);
-            throw new Error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada ou spam.");
+          // O Supabase pode mascarar o erro de "e-mail não confirmado" como "credencial inválida" por segurança.
+          // Por isso, sempre que o login falhar, oferecemos a opção de reenviar o e-mail como fallback.
+          setShowResend(true);
+          
+          if (error.message.toLowerCase().includes("email not confirmed")) {
+            throw new Error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada (ou lixeira/spam).");
+          } else if (error.message.toLowerCase().includes("invalid login credentials")) {
+            throw new Error("Credenciais inválidas. Se você acabou de se cadastrar, lembre-se de confirmar o e-mail clicando no link que enviamos.");
+          } else {
+            throw new Error(error.message);
           }
-          throw error;
         }
         
         if (data.session) {
@@ -144,9 +149,14 @@ export default function Login() {
   };
 
   // ==========================================
-  // NOVA FUNÇÃO: REENVIAR E-MAIL
+  // FUNÇÃO DE REENVIO DE E-MAIL
   // ==========================================
   const handleResendEmail = async () => {
+    if (!email) {
+      setMessage({ text: "Digite seu e-mail no campo acima antes de solicitar o reenvio.", type: "error" });
+      return;
+    }
+    
     setLoading(true);
     setMessage({ text: "Reenviando e-mail...", type: "info" });
     try {
@@ -156,7 +166,7 @@ export default function Login() {
       });
       if (error) throw error;
       
-      setMessage({ text: "E-mail reenviado com sucesso! Por favor, verifique sua caixa de entrada e Spam.", type: "success" });
+      setMessage({ text: "E-mail reenviado com sucesso! Verifique sua caixa de entrada e Spam.", type: "success" });
       setShowResend(false);
     } catch (err: any) {
       setMessage({ text: "Erro ao reenviar: " + err.message, type: "error" });
@@ -265,14 +275,10 @@ export default function Login() {
             </div>
           )}
 
-          {/* ========================================== */}
-          {/* MENSAGENS DE ERRO E BOTÃO DE REENVIO */}
-          {/* ========================================== */}
           {message.text && (
             <div className={`p-4 rounded-lg text-sm font-medium ${message.type === "error" ? "bg-red-50 text-red-700 border border-red-100" : message.type === "info" ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-green-50 text-green-700 border border-green-100"}`}>
               <p>{message.text}</p>
               
-              {/* Botão de Reenvio Mágico aparece se showResend for true */}
               {showResend && (
                 <button
                   type="button"
