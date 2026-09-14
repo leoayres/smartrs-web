@@ -39,7 +39,6 @@ export default function Login() {
   const [cpf, setCpf] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [creci, setCreci] = useState("");
-  const [foto, setFoto] = useState<File | null>(null);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +82,7 @@ export default function Login() {
         }
       } else {
         // ==========================================
-        // LÓGICA DE CADASTRO (COM PROTEÇÃO RPC)
+        // LÓGICA DE CADASTRO
         // ==========================================
         if (!nome || !cpf || !whatsapp) throw new Error("Nome, CPF e WhatsApp são obrigatórios.");
         if (cpf.length < 14) throw new Error("CPF inválido.");
@@ -96,7 +95,7 @@ export default function Login() {
         if (cpfExistente) throw new Error("Atenção: Este CPF já está cadastrado em outra conta.");
 
         // 2. Dispara o cadastro
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -185,15 +184,10 @@ export default function Login() {
                 <input type="text" value={whatsapp} onChange={(e) => setWhatsapp(formatarWhatsApp(e.target.value))} placeholder="(00) 00000-0000" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required={!isLogin} />
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">CRECI <span className="text-slate-400 font-normal">(Opcional)</span></label>
                 <input type="text" value={creci} onChange={(e) => setCreci(e.target.value)} placeholder="Ex: 12345-F" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-1">Foto de Perfil <span className="text-slate-400 font-normal">(Opcional)</span></label>
-                <input type="file" accept="image/*" onChange={(e) => setFoto(e.target.files ? e.target.files[0] : null)} disabled className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 cursor-not-allowed opacity-60" title="Você poderá adicionar sua foto após confirmar o e-mail." />
-                <p className="text-[10px] text-slate-400 mt-1 font-medium">Após ativar sua conta, insira a foto no menu Minha Conta.</p>
+                <p className="text-[11px] text-slate-400 mt-2 font-medium">📷 Você poderá adicionar sua Foto de Perfil na área "Minha Conta" após confirmar seu e-mail.</p>
               </div>
             </div>
           )}
