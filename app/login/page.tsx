@@ -32,6 +32,7 @@ export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  const [showResend, setShowResend] = useState(false); // NOVO: Controle do botão de reenvio
 
   // Campos do Formulário
   const [email, setEmail] = useState("");
@@ -46,6 +47,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setMessage({ text: "", type: "" });
+    setShowResend(false);
 
     try {
       if (isLogin) {
@@ -53,7 +55,15 @@ export default function Login() {
         // LÓGICA DE LOGIN
         // ==========================================
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        
+        if (error) {
+          // Intercepta o erro de e-mail não confirmado
+          if (error.message.includes("Email not confirmed")) {
+            setShowResend(true);
+            throw new Error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada ou spam.");
+          }
+          throw error;
+        }
         
         if (data.session) {
           try {
@@ -75,35 +85,26 @@ export default function Login() {
         // ==========================================
         // LÓGICA DE CADASTRO
         // ==========================================
-        // 1. Validações Locais
         if (!nome || !cpf || !whatsapp) throw new Error("Nome, CPF e WhatsApp são obrigatórios.");
         if (cpf.length < 14) throw new Error("CPF inválido.");
         if (whatsapp.length < 14) throw new Error("WhatsApp inválido.");
 
-        // 2. Checagem de CPF Duplicado ANTES de criar a conta
-        const { data: cpfExistente } = await supabase
-          .from("usuarios")
-          .select("id")
-          .eq("cpf", cpf)
-          .maybeSingle();
+        const { data: cpfExistente } = await supabase.from("usuarios").select("id").eq("cpf", cpf).maybeSingle();
 
         if (cpfExistente) {
           throw new Error("Este CPF já está vinculado a outra conta no sistema.");
         }
 
-        // 3. Cria a conta no Auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
         });
         if (authError) throw authError;
 
-        // 4. Salva os dados na tabela e faz upload da foto (se a sessão existir / auto-login ativado)
-        if (authData.user && authData.session) {
+        if (authData.user) {
           const userId = authData.user.id;
           let avatarUrl = "";
 
-          // Upload da Foto
           if (foto) {
             const fileExt = foto.name.split('.').pop();
             const filePath = `${userId}-${Math.random()}.${fileExt}`;
@@ -114,7 +115,6 @@ export default function Login() {
             }
           }
 
-          // Injeta no Banco
           await supabase.from("usuarios").upsert({
             id: userId,
             nome,
@@ -125,18 +125,41 @@ export default function Login() {
             updated_at: new Date(),
           });
           
-          router.push("/"); // Cadastro feito com sucesso, vai pra Home
-          return;
-        } else {
-          // Se o Supabase exigir confirmação por e-mail antes de logar
-          setMessage({
-            text: "Conta pré-criada! Verifique seu e-mail para confirmar antes de acessar.",
-            type: "success",
-          });
+          if (authData.session) {
+            router.push("/");
+            return;
+          } else {
+            setMessage({
+              text: "Conta criada! Enviamos um link de confirmação para o seu e-mail.",
+              type: "success",
+            });
+          }
         }
       }
     } catch (error: any) {
       setMessage({ text: error.message, type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ==========================================
+  // NOVA FUNÇÃO: REENVIAR E-MAIL
+  // ==========================================
+  const handleResendEmail = async () => {
+    setLoading(true);
+    setMessage({ text: "Reenviando e-mail...", type: "info" });
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      if (error) throw error;
+      
+      setMessage({ text: "E-mail reenviado com sucesso! Por favor, verifique sua caixa de entrada e Spam.", type: "success" });
+      setShowResend(false);
+    } catch (err: any) {
+      setMessage({ text: "Erro ao reenviar: " + err.message, type: "error" });
     } finally {
       setLoading(false);
     }
@@ -156,7 +179,6 @@ export default function Login() {
 
         <form onSubmit={handleAuth} className="space-y-5">
           
-          {/* CAMPOS DE LOGIN SEMPRE VISÍVEIS */}
           <div className={`grid gap-5 ${!isLogin ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">E-mail *</label>
@@ -182,7 +204,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* CAMPOS EXTRAS APENAS PARA CADASTRO */}
           {!isLogin && (
             <div className="grid gap-5 md:grid-cols-2 pt-4 border-t border-slate-100">
               <div className="md:col-span-2">
@@ -244,9 +265,23 @@ export default function Login() {
             </div>
           )}
 
+          {/* ========================================== */}
+          {/* MENSAGENS DE ERRO E BOTÃO DE REENVIO */}
+          {/* ========================================== */}
           {message.text && (
-            <div className={`p-4 rounded-lg text-sm font-medium ${message.type === "error" ? "bg-red-50 text-red-600 border border-red-100" : "bg-green-50 text-green-700 border border-green-100"}`}>
-              {message.text}
+            <div className={`p-4 rounded-lg text-sm font-medium ${message.type === "error" ? "bg-red-50 text-red-700 border border-red-100" : message.type === "info" ? "bg-blue-50 text-blue-700 border border-blue-100" : "bg-green-50 text-green-700 border border-green-100"}`}>
+              <p>{message.text}</p>
+              
+              {/* Botão de Reenvio Mágico aparece se showResend for true */}
+              {showResend && (
+                <button
+                  type="button"
+                  onClick={handleResendEmail}
+                  className="mt-3 inline-block bg-red-100 hover:bg-red-200 text-red-800 font-bold py-1.5 px-3 rounded transition-colors"
+                >
+                  📨 Reenviar E-mail de Confirmação
+                </button>
+              )}
             </div>
           )}
 
@@ -267,6 +302,7 @@ export default function Login() {
             onClick={() => {
               setIsLogin(!isLogin);
               setMessage({ text: "", type: "" });
+              setShowResend(false);
             }}
             className="text-blue-600 font-extrabold hover:underline ml-1"
           >
