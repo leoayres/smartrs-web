@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { Menu, X, Settings } from "lucide-react"; // Importamos o ícone Settings (Engrenagem)
+import { Menu, X, Settings, ShieldCheck } from "lucide-react"; 
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,13 +15,20 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [usuarioEmail, setUsuarioEmail] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Estado do menu
+  const [isAdmin, setIsAdmin] = useState(false); // NOVO: Controle de Admin
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   useEffect(() => {
     const checarSessao = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUsuarioEmail(session.user.email || "");
+        
+        // Verifica se o usuário é Admin silenciosamente
+        const { data } = await supabase.from("usuarios").select("nivel_acesso").eq("id", session.user.id).single();
+        if (data && data.nivel_acesso === 'admin') {
+          setIsAdmin(true);
+        }
       }
     };
     checarSessao();
@@ -68,16 +75,26 @@ export default function Header() {
             </Link>
         </nav>
         
-        {/* DADOS DESKTOP E BOTAO MOBILE */}
+        {/* DADOS DESKTOP E BOTOES */}
         <div className="flex items-center gap-3 md:gap-5">
           <div className="hidden md:flex flex-col text-right">
-            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Corretor Logado</span>
+            <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+              {isAdmin ? "Administrador" : "Corretor Logado"}
+            </span>
             <strong className="text-sm text-slate-700">{usuarioEmail}</strong>
           </div>
           
           <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
           
-          {/* Botão Minha Conta (Desktop) */}
+          {/* Botão Admin (Visível apenas para quem tem a permissão) */}
+          {isAdmin && (
+            <Link href="/admin" className="hidden md:flex items-center gap-2 text-sm bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border border-purple-100">
+              <ShieldCheck size={16} />
+              Admin
+            </Link>
+          )}
+
+          {/* Botão Minha Conta */}
           <Link href="/conta" className="hidden md:flex items-center gap-2 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg font-bold transition-colors">
             <Settings size={16} />
             Conta
@@ -98,7 +115,7 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-lg py-4 px-4 flex flex-col gap-4">
             <div className="flex flex-col text-left mb-2 border-b border-gray-100 pb-2">
-               <span className="text-xs uppercase tracking-wider font-bold text-slate-400">Usuário</span>
+               <span className="text-xs uppercase tracking-wider font-bold text-slate-400">{isAdmin ? "Administrador" : "Corretor"}</span>
                <strong className="text-sm text-slate-700 truncate">{usuarioEmail}</strong>
             </div>
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
@@ -109,6 +126,13 @@ export default function Header() {
             </Link>
             
             <div className="w-full h-px bg-gray-100 my-1"></div>
+
+            {isAdmin && (
+              <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 text-base font-semibold transition-colors ${pathname === "/admin" ? "text-purple-600" : "text-purple-700 hover:text-purple-900"}`}>
+                <ShieldCheck size={18} />
+                Painel Admin
+              </Link>
+            )}
 
             <Link href="/conta" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 text-base font-semibold transition-colors ${pathname === "/conta" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               <Settings size={18} />
