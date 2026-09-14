@@ -35,8 +35,8 @@ export default function AdminDashboard() {
         return router.push("/"); // Expulsa invasores para a home
       }
 
-      // 2. Busca todos os usuários
-      const { data: listaUsuarios } = await supabase.from("usuarios").select("*").order("created_at", { ascending: false });
+      // 2. Busca todos os usuários (CORRIGIDO PARA 'updated_at')
+      const { data: listaUsuarios } = await supabase.from("usuarios").select("*").order("updated_at", { ascending: false });
       setUsuarios(listaUsuarios || []);
       setLoading(false);
     }
