@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { Menu, X, Settings, ShieldCheck } from "lucide-react"; 
+import { Menu, X, Settings, ShieldCheck, Coins } from "lucide-react"; 
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,7 +16,7 @@ export default function Header() {
   const pathname = usePathname();
   const [usuarioEmail, setUsuarioEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false); 
-  const [creditos, setCreditos] = useState<number | null>(null); // Controle de Créditos
+  const [creditos, setCreditos] = useState<number | null>(null); 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   useEffect(() => {
@@ -25,7 +25,6 @@ export default function Header() {
       if (session) {
         setUsuarioEmail(session.user.email || "");
         
-        // Verifica nível e créditos silenciosamente
         const { data } = await supabase.from("usuarios").select("nivel_acesso, creditos").eq("id", session.user.id).single();
         if (data) {
           if (data.nivel_acesso === 'admin') setIsAdmin(true);
@@ -88,28 +87,29 @@ export default function Header() {
           
           <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
           
-          {/* Badge de Créditos (Oculto para Admins) */}
+          {/* Badge de Créditos com Ícone Profissional (Oculto para Admins) */}
           {creditos !== null && !isAdmin && (
-            <Link href="/planos" className={`hidden md:flex items-center gap-2 text-sm px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border ${creditos <= 0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
-              🪙 {creditos} {creditos === 1 ? 'Dossiê' : 'Dossiês'}
+            <Link href="/planos" className={`hidden md:flex items-center gap-2 text-sm px-3.5 py-2 rounded-xl font-bold transition-all shadow-sm border ${creditos <= 0 ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
+              <Coins size={16} className={creditos <= 0 ? 'text-red-600' : 'text-amber-600'} />
+              <span>{creditos} {creditos === 1 ? 'Dossiê' : 'Dossiês'}</span>
             </Link>
           )}
 
-          {/* Botão Admin (Visível apenas para quem tem a permissão) */}
+          {/* Botão Admin */}
           {isAdmin && (
-            <Link href="/admin" className="hidden md:flex items-center gap-2 text-sm bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border border-purple-100">
+            <Link href="/admin" className="hidden md:flex items-center gap-2 text-sm bg-purple-50 text-purple-700 hover:bg-purple-100 px-3.5 py-2 rounded-xl font-bold transition-all shadow-sm border border-purple-100">
               <ShieldCheck size={16} />
               Admin
             </Link>
           )}
 
           {/* Botão Minha Conta */}
-          <Link href="/conta" className="hidden md:flex items-center gap-2 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg font-bold transition-colors">
+          <Link href="/conta" className="hidden md:flex items-center gap-2 text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-xl font-bold transition-colors">
             <Settings size={16} />
             Conta
           </Link>
 
-          <button onClick={handleLogout} className="hidden md:block text-sm bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg font-bold transition-colors">
+          <button onClick={handleLogout} className="hidden md:block text-sm bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-xl font-bold transition-colors">
             Sair
           </button>
 
@@ -130,7 +130,8 @@ export default function Header() {
             
             {creditos !== null && !isAdmin && (
               <Link href="/planos" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 text-base font-bold transition-colors ${creditos <= 0 ? 'text-red-600' : 'text-amber-600'}`}>
-                🪙 {creditos} {creditos === 1 ? 'Dossiê Disponível' : 'Dossiês Disponíveis'}
+                <Coins size={18} />
+                <span>{creditos} {creditos === 1 ? 'Dossiê Disponível' : 'Dossiês Disponíveis'}</span>
               </Link>
             )}
 
@@ -155,7 +156,7 @@ export default function Header() {
               Minha Conta
             </Link>
 
-            <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="mt-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 w-full py-3 rounded-lg font-bold transition-colors text-center">
+            <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="mt-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 w-full py-3 rounded-xl font-bold transition-colors text-center">
               Sair da Conta
             </button>
         </div>
