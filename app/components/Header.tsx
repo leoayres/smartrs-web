@@ -15,7 +15,8 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [usuarioEmail, setUsuarioEmail] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false); // NOVO: Controle de Admin
+  const [isAdmin, setIsAdmin] = useState(false); 
+  const [creditos, setCreditos] = useState<number | null>(null); // Controle de Créditos
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   useEffect(() => {
@@ -24,10 +25,11 @@ export default function Header() {
       if (session) {
         setUsuarioEmail(session.user.email || "");
         
-        // Verifica se o usuário é Admin silenciosamente
-        const { data } = await supabase.from("usuarios").select("nivel_acesso").eq("id", session.user.id).single();
-        if (data && data.nivel_acesso === 'admin') {
-          setIsAdmin(true);
+        // Verifica nível e créditos silenciosamente
+        const { data } = await supabase.from("usuarios").select("nivel_acesso, creditos").eq("id", session.user.id).single();
+        if (data) {
+          if (data.nivel_acesso === 'admin') setIsAdmin(true);
+          setCreditos(data.creditos);
         }
       }
     };
@@ -86,6 +88,13 @@ export default function Header() {
           
           <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
           
+          {/* Badge de Créditos (Oculto para Admins) */}
+          {creditos !== null && !isAdmin && (
+            <Link href="/planos" className={`hidden md:flex items-center gap-2 text-sm px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border ${creditos <= 0 ? 'bg-red-50 text-red-700 border-red-200' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
+              🪙 {creditos} {creditos === 1 ? 'Dossiê' : 'Dossiês'}
+            </Link>
+          )}
+
           {/* Botão Admin (Visível apenas para quem tem a permissão) */}
           {isAdmin && (
             <Link href="/admin" className="hidden md:flex items-center gap-2 text-sm bg-purple-50 text-purple-700 hover:bg-purple-100 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border border-purple-100">
@@ -118,6 +127,13 @@ export default function Header() {
                <span className="text-xs uppercase tracking-wider font-bold text-slate-400">{isAdmin ? "Administrador" : "Corretor"}</span>
                <strong className="text-sm text-slate-700 truncate">{usuarioEmail}</strong>
             </div>
+            
+            {creditos !== null && !isAdmin && (
+              <Link href="/planos" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-2 text-base font-bold transition-colors ${creditos <= 0 ? 'text-red-600' : 'text-amber-600'}`}>
+                🪙 {creditos} {creditos === 1 ? 'Dossiê Disponível' : 'Dossiês Disponíveis'}
+              </Link>
+            )}
+
             <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               Novo Laudo
             </Link>
