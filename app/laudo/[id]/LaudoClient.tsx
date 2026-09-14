@@ -123,10 +123,11 @@ export default function LaudoClient() {
           <div className="bg-white rounded-3xl shadow-xl shadow-blue-900/5 border border-slate-200 overflow-hidden">
             
             {/* Banner Superior */}
-            <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-8 text-center text-white relative">
+            <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-8 text-center relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-amber-500"></div>
-              <h3 className="text-2xl font-black tracking-tight mb-2">Tem interesse nesta região?</h3>
-              <p className="text-blue-100 text-sm">Fale com o especialista responsável por este mapeamento.</p>
+              {/* O erro estava aqui. Forcei o texto para branco claro. */}
+              <h3 className="text-2xl font-black tracking-tight mb-2 text-white">Tem interesse nesta região?</h3>
+              <p className="text-white/80 font-medium text-sm">Fale com o especialista responsável por este mapeamento.</p>
             </div>
 
             <div className="p-8 md:p-10 flex flex-col md:flex-row gap-10">
