@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Funções de Máscara
+// Funções de Máscara Automática
 const formatarCPF = (valor: string) => {
   let v = valor.replace(/\D/g, "");
   if (v.length > 11) v = v.substring(0, 11);
@@ -34,7 +34,6 @@ export default function Login() {
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showResend, setShowResend] = useState(false); 
 
-  // Campos do Formulário
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
@@ -52,21 +51,18 @@ export default function Login() {
     try {
       if (isLogin) {
         // ==========================================
-        // LÓGICA DE LOGIN (BLINDADA CONTRA MÁSCARAS DO SUPABASE)
+        // LÓGICA DE LOGIN (Tratamento Elegante de Erros)
         // ==========================================
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
         if (error) {
-          // O Supabase pode mascarar o erro de "e-mail não confirmado" como "credencial inválida" por segurança.
-          // Por isso, sempre que o login falhar, oferecemos a opção de reenviar o e-mail como fallback.
-          setShowResend(true);
-          
+          setShowResend(true); // Se deu erro de login, oferecemos o reenvio de e-mail como fallback
           if (error.message.toLowerCase().includes("email not confirmed")) {
             throw new Error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada (ou lixeira/spam).");
           } else if (error.message.toLowerCase().includes("invalid login credentials")) {
-            throw new Error("Credenciais inválidas. Se você acabou de se cadastrar, lembre-se de confirmar o e-mail clicando no link que enviamos.");
+            throw new Error("Credenciais inválidas. Se você acabou de se cadastrar, não esqueça de confirmar o link enviado para o seu e-mail.");
           } else {
-            throw new Error(error.message);
+            throw new Error("Erro de acesso. Verifique seus dados e tente novamente.");
           }
         }
         
@@ -88,58 +84,40 @@ export default function Login() {
         }
       } else {
         // ==========================================
-        // LÓGICA DE CADASTRO
+        // LÓGICA DE CADASTRO (A Mágica dos Metadados)
         // ==========================================
         if (!nome || !cpf || !whatsapp) throw new Error("Nome, CPF e WhatsApp são obrigatórios.");
         if (cpf.length < 14) throw new Error("CPF inválido.");
         if (whatsapp.length < 14) throw new Error("WhatsApp inválido.");
 
-        const { data: cpfExistente } = await supabase.from("usuarios").select("id").eq("cpf", cpf).maybeSingle();
-
-        if (cpfExistente) {
-          throw new Error("Este CPF já está vinculado a outra conta no sistema.");
-        }
-
+        // Dispara o cadastro empacotando os dados pessoais (O Trigger do SQL fará o resto!)
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
-        });
-        if (authError) throw authError;
-
-        if (authData.user) {
-          const userId = authData.user.id;
-          let avatarUrl = "";
-
-          if (foto) {
-            const fileExt = foto.name.split('.').pop();
-            const filePath = `${userId}-${Math.random()}.${fileExt}`;
-            const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, foto);
-            if (!uploadError) {
-              const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
-              avatarUrl = urlData.publicUrl;
+          options: {
+            data: {
+              nome: nome,
+              cpf: cpf,
+              whatsapp: whatsapp,
+              creci: creci
             }
           }
+        });
 
-          await supabase.from("usuarios").upsert({
-            id: userId,
-            nome,
-            cpf,
-            whatsapp,
-            creci,
-            avatar_url: avatarUrl,
-            updated_at: new Date(),
-          });
-          
-          if (authData.session) {
-            router.push("/");
-            return;
-          } else {
-            setMessage({
-              text: "Conta criada! Enviamos um link de confirmação para o seu e-mail.",
-              type: "success",
-            });
+        if (authError) {
+          if (authError.message.includes("usuarios_cpf_key")) {
+            throw new Error("Atenção: Este CPF já está cadastrado em outra conta.");
           }
+          throw authError;
         }
+
+        // Aviso de Sucesso. O upload de foto é ignorado neste momento porque
+        // o Supabase bloqueia uploads de usuários com e-mail pendente de confirmação.
+        // O corretor insere a foto depois, lá na tela "Conta".
+        setMessage({
+          text: "✅ Conta criada com sucesso! Acesse seu e-mail e clique no link de confirmação para liberar o acesso.",
+          type: "success",
+        });
       }
     } catch (error: any) {
       setMessage({ text: error.message, type: "error" });
@@ -149,7 +127,7 @@ export default function Login() {
   };
 
   // ==========================================
-  // FUNÇÃO DE REENVIO DE E-MAIL
+  // FUNÇÃO: REENVIAR E-MAIL
   // ==========================================
   const handleResendEmail = async () => {
     if (!email) {
@@ -177,7 +155,7 @@ export default function Login() {
 
   return (
     <div className="bg-gray-50 flex flex-col justify-center items-center font-sans min-h-screen py-10 px-4">
-      <div className={`w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all ${isLogin ? 'max-w-md' : 'max-w-2xl'}`}>
+      <div className={`w-full bg-white p-8 rounded-2xl shadow-sm border border-gray-100 transition-all duration-300 ease-in-out ${isLogin ? 'max-w-md' : 'max-w-2xl'}`}>
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
             {isLogin ? "Acesse sua conta" : "Crie sua conta"}
@@ -214,6 +192,7 @@ export default function Login() {
             </div>
           </div>
 
+          {/* CAMPOS ESCONDIDOS NO LOGIN, VISÍVEIS NO CADASTRO */}
           {!isLogin && (
             <div className="grid gap-5 md:grid-cols-2 pt-4 border-t border-slate-100">
               <div className="md:col-span-2">
@@ -269,8 +248,11 @@ export default function Login() {
                   type="file"
                   accept="image/*"
                   onChange={(e) => setFoto(e.target.files ? e.target.files[0] : null)}
-                  className="w-full p-2 border border-slate-300 rounded-lg text-sm bg-slate-50 cursor-pointer file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  disabled // Desativado no cadastro, pois o email não está confirmado ainda.
+                  className="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50 cursor-not-allowed opacity-60"
+                  title="Você poderá adicionar sua foto após confirmar o e-mail."
                 />
+                <p className="text-[10px] text-slate-400 mt-1 font-medium">Após ativar sua conta, insira a foto no menu Minha Conta.</p>
               </div>
             </div>
           )}
