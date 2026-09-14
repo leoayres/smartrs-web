@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Link from "next/link"; // Adicionado para a navegação do cabeçalho
 
 // Importando nosso novo e poderoso componente centralizado!
 import LoadingSteps from "./components/LoadingSteps";
@@ -132,8 +133,34 @@ export default function Home() {
 
   // TELA PRINCIPAL: Busca de Endereço
   return (
-    <div className="bg-gray-50 flex flex-col items-center pt-8 md:pt-16 min-h-screen font-sans p-4">
-      <div className="w-full max-w-2xl bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-gray-50 flex flex-col items-center pt-8 md:pt-16 min-h-screen font-sans p-4 relative">
+      
+      {/* MENU SUPERIOR DIREITO */}
+      <div className="absolute top-6 right-6 flex items-center gap-4">
+        <div className="text-right hidden md:block">
+          <div className="text-xs text-slate-400 font-bold uppercase tracking-wider">Usuário Logado</div>
+          <div className="text-sm font-semibold text-slate-700">{usuarioEmail}</div>
+        </div>
+        
+        <Link 
+          href="/conta" 
+          className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 p-2 px-4 rounded-lg text-sm font-bold transition-all shadow-sm"
+        >
+          ⚙️ Minha Conta
+        </Link>
+
+        <button 
+          onClick={async () => {
+            await supabase.auth.signOut();
+            router.push("/login");
+          }}
+          className="border border-red-200 text-red-600 hover:bg-red-50 p-2 px-4 rounded-lg text-sm font-bold transition-colors"
+        >
+          Sair
+        </button>
+      </div>
+
+      <div className="w-full max-w-2xl bg-white p-8 md:p-10 rounded-2xl shadow-sm border border-gray-100 mt-12 md:mt-0">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">Dossiê de Inteligência Imobiliária</h1>
           <p className="text-slate-500 text-sm md:text-base">Transforme endereços em dossiês auditáveis com precificação em tempo real, cálculo de Yield e análise urbana inteligente.</p>
