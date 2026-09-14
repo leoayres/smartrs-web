@@ -74,6 +74,10 @@ export default function Header() {
             <Link href="/meus-laudos" className={`text-sm font-semibold transition-colors ${pathname === "/meus-laudos" ? "text-blue-600" : "text-gray-500 hover:text-gray-900"}`}>
               Meus Laudos
             </Link>
+            {/* NOVA ABA: MEUS LEADS */}
+            <Link href="/meus-leads" className={`text-sm font-semibold transition-colors ${pathname === "/meus-leads" ? "text-blue-600" : "text-gray-500 hover:text-gray-900"}`}>
+              Meus Leads
+            </Link>
         </nav>
         
         {/* DADOS DESKTOP E BOTOES */}
@@ -140,6 +144,10 @@ export default function Header() {
             </Link>
             <Link href="/meus-laudos" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/meus-laudos" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               Meus Laudos
+            </Link>
+            {/* NOVA ABA MOBILE: MEUS LEADS */}
+            <Link href="/meus-leads" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/meus-leads" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
+              Meus Leads
             </Link>
             
             <div className="w-full h-px bg-gray-100 my-1"></div>
