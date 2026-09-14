@@ -122,12 +122,17 @@ export default function LaudoClient() {
         <div className="w-full max-w-4xl mt-10">
           <div className="bg-white rounded-3xl shadow-xl shadow-blue-900/5 border border-slate-200 overflow-hidden">
             
-            {/* Banner Superior */}
+            {/* Banner Superior - BLINDADO CONTRA CSS GLOBAL */}
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 p-8 text-center relative">
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-amber-500"></div>
-              {/* O erro estava aqui. Forcei o texto para branco claro. */}
-              <h3 className="text-2xl font-black tracking-tight mb-2 text-white">Tem interesse nesta região?</h3>
-              <p className="text-white/80 font-medium text-sm">Fale com o especialista responsável por este mapeamento.</p>
+              
+              <h3 className="text-2xl font-black tracking-tight mb-2 !text-white">
+                Tem interesse nesta região?
+              </h3>
+              
+              <div className="!text-white font-medium text-sm opacity-90">
+                Fale com o especialista responsável por este mapeamento.
+              </div>
             </div>
 
             <div className="p-8 md:p-10 flex flex-col md:flex-row gap-10">
@@ -161,7 +166,7 @@ export default function LaudoClient() {
                   <div className="h-full flex flex-col items-center justify-center text-center p-6 bg-green-50 rounded-2xl border border-green-100">
                     <CheckCircle size={48} className="text-green-500 mb-4" />
                     <h4 className="text-lg font-bold text-green-800 mb-2">Contato Enviado!</h4>
-                    <p className="text-sm text-green-700">O corretor foi notificado e entrará em contato em breve.</p>
+                    <div className="text-sm text-green-700">O corretor foi notificado e entrará em contato em breve.</div>
                   </div>
                 ) : (
                   <form onSubmit={handleEnviarLead} className="flex flex-col h-full justify-center">
@@ -197,9 +202,9 @@ export default function LaudoClient() {
                         {enviandoLead ? "Enviando..." : <><Send size={18} /> Solicitar Contato</>}
                       </button>
                     </div>
-                    <p className="text-[10px] text-slate-400 text-center mt-4">
+                    <div className="text-[10px] text-slate-400 text-center mt-4">
                       Seus dados estão seguros e serão enviados diretamente ao corretor responsável.
-                    </p>
+                    </div>
                   </form>
                 )}
               </div>
