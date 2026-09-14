@@ -10,6 +10,20 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// Função auxiliar para aplicar a máscara de telefone (BR)
+const formatarWhatsApp = (valor: string) => {
+  if (!valor) return "";
+  let v = valor.replace(/\D/g, ""); // Remove tudo que não é dígito
+  if (v.length <= 10) {
+    v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+    v = v.replace(/(\d{4})(\d)/, "$1-$2");
+  } else {
+    v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+    v = v.replace(/(\d{5})(\d)/, "$1-$2");
+  }
+  return v.substring(0, 15); // Limita ao tamanho máximo: (XX) XXXXX-XXXX
+};
+
 export default function ContaPage() {
   const router = useRouter();
   
@@ -20,6 +34,7 @@ export default function ContaPage() {
   const [usuarioId, setUsuarioId] = useState("");
   const [nome, setNome] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [creci, setCreci] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
 
@@ -33,16 +48,17 @@ export default function ContaPage() {
       
       setUsuarioId(session.user.id);
 
-      // Busca os dados públicos do usuário na NOVA tabela 'usuarios'
+      // Busca os dados públicos do usuário (agora incluindo o CRECI)
       const { data } = await supabase
         .from("usuarios")
-        .select("nome, whatsapp, avatar_url")
+        .select("nome, whatsapp, avatar_url, creci")
         .eq("id", session.user.id)
         .single();
 
       if (data) {
         setNome(data.nome || "");
         setWhatsapp(data.whatsapp || "");
+        setCreci(data.creci || "");
         setAvatarUrl(data.avatar_url || "");
       }
       setLoading(false);
@@ -61,14 +77,12 @@ export default function ContaPage() {
       setSalvando(true);
       setMensagem({ texto: "Enviando foto...", tipo: "info" });
 
-      // Sobe a foto pro bucket 'avatars'
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      // Pega a URL pública gerada pelo Supabase
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
@@ -82,6 +96,10 @@ export default function ContaPage() {
     }
   };
 
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWhatsapp(formatarWhatsApp(e.target.value));
+  };
+
   const handleSalvarConta = async (e: React.FormEvent) => {
     e.preventDefault();
     setSalvando(true);
@@ -93,19 +111,20 @@ export default function ContaPage() {
         id: usuarioId,
         nome,
         whatsapp,
+        creci,
         avatar_url: avatarUrl,
         updated_at: new Date(),
       });
 
       if (usuarioError) throw usuarioError;
 
-      // 2. Atualiza a senha (apenas se o usuário digitou uma nova)
+      // 2. Atualiza a senha
       if (novaSenha) {
         const { error: authError } = await supabase.auth.updateUser({
           password: novaSenha
         });
         if (authError) throw authError;
-        setNovaSenha(""); // Limpa o campo após o sucesso para segurança
+        setNovaSenha(""); 
       }
 
       setMensagem({ texto: "Conta atualizada com sucesso!", tipo: "sucesso" });
@@ -137,7 +156,6 @@ export default function ContaPage() {
 
         <form onSubmit={handleSalvarConta} className="space-y-6">
           
-          {/* FOTO DE PERFIL / AVATAR */}
           <div className="flex flex-col items-center mb-6">
             <div className="h-24 w-24 rounded-full overflow-hidden bg-slate-100 border-2 border-slate-200 mb-4 flex items-center justify-center shadow-inner">
               {avatarUrl ? (
@@ -164,15 +182,28 @@ export default function ContaPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">WhatsApp Profissional</label>
-              <input
-                type="text"
-                value={whatsapp}
-                onChange={(e) => setWhatsapp(e.target.value)}
-                placeholder="Ex: (85) 99999-9999"
-                className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">CRECI</label>
+                <input
+                  type="text"
+                  value={creci}
+                  onChange={(e) => setCreci(e.target.value)}
+                  placeholder="Ex: 12345-F"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">WhatsApp Profissional</label>
+                <input
+                  type="text"
+                  value={whatsapp}
+                  onChange={handleWhatsAppChange}
+                  placeholder="(00) 00000-0000"
+                  className="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                />
+              </div>
             </div>
 
             <hr className="my-2 border-slate-100" />
