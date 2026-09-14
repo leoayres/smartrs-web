@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Link from "next/link"; // Adicionado para o botão de planos
 
 // Importando nosso novo e poderoso componente centralizado!
 import LoadingSteps from "./components/LoadingSteps";
@@ -94,14 +95,23 @@ export default function Home() {
         body: JSON.stringify({ endereco: endereco, user_id: usuarioId }),
       });
       
-      if (!resposta.ok) throw new Error("Falha ao gerar o Laudo. Tente novamente.");
+      if (!resposta.ok) {
+        // Se a API retornar erro HTTP (ex: 402 Payment Required), pegamos a mensagem
+        const errorData = await resposta.json().catch(() => null);
+        throw new Error(errorData?.detail || "Falha ao gerar o Laudo. Tente novamente.");
+      }
 
       // Se deu tudo certo, redireciona para a vitrine
       router.push("/meus-laudos");
 
     } catch (err: any) {
       setLoading(false);
-      setErro(err.message);
+      // Se o backend devolver o bloqueio de créditos, mostramos o Paywall
+      if (err.message.includes("CRÉDITOS_ESGOTADOS") || err.message.includes("limite")) {
+        setErro("Você atingiu o limite de dossiês da sua conta.");
+      } else {
+        setErro(err.message);
+      }
     }
   };
 
@@ -172,9 +182,18 @@ export default function Home() {
             )}
           </div>
 
+          {/* ========================================== */}
+          {/* LÓGICA DE EXIBIÇÃO DE ERRO E PAYWALL (CRÉDITOS) */}
+          {/* ========================================== */}
           {erro && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium border border-red-100 flex items-center gap-2">
-              ⚠️ {erro}
+            <div className={`p-4 rounded-xl text-sm font-medium border flex flex-col gap-3 ${erro.includes("limite") ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-red-50 text-red-600 border-red-100"}`}>
+              <div className="flex items-center gap-2">⚠️ {erro}</div>
+              
+              {erro.includes("limite") && (
+                <Link href="/planos" className="bg-amber-500 hover:bg-amber-600 text-white text-center py-2.5 rounded-lg font-bold transition-colors shadow-sm">
+                  Ver Pacotes e Planos
+                </Link>
+              )}
             </div>
           )}
 
