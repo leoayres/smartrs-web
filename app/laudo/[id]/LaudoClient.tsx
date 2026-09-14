@@ -70,6 +70,19 @@ export default function LaudoClient() {
 
       if (error) throw error;
       setLeadSucesso(true);
+
+      // NOVO: Dispara a notificação de e-mail em background sem travar a UI
+      fetch("/api/notificar-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          laudoId,
+          corretorId: dossie.user_id,
+          nomeCliente: nome,
+          telefoneCliente: telefone,
+        }),
+      }).catch((err) => console.error("Falha silenciosa ao notificar por email:", err));
+
     } catch (err) {
       alert("Houve um problema ao enviar o contato. Tente clicando no botão do WhatsApp!");
     } finally {
