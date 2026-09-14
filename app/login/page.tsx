@@ -49,7 +49,7 @@ export default function Login() {
     try {
       if (isLogin) {
         // ==========================================
-        // LÓGICA DE LOGIN
+        // LÓGICA DE LOGIN 
         // ==========================================
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
@@ -65,8 +65,25 @@ export default function Login() {
         }
         
         if (data.session) {
+          const userId = data.session.user.id;
+          
+          // ==========================================
+          // NOVO: O "CAÇA-FANTASMAS"
+          // Garante que o usuário tem ficha na tabela principal
+          // ==========================================
+          const { data: userCheck, error: checkError } = await supabase
+            .from("usuarios")
+            .select("id")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (!userCheck) {
+            await supabase.auth.signOut(); // Desloga o fantasma na força
+            throw new Error("Falha de sincronização. Sua conta não foi gerada corretamente no banco de dados. Contate o suporte.");
+          }
+
+          // Se passou pelo caça-fantasmas, continua o roteamento normal
           try {
-            const userId = data.session.user.id;
             const resposta = await fetch(`https://smartrs.onrender.com/laudos/meus/${userId}`);
             if (resposta.ok) {
               const json = await resposta.json();
@@ -88,13 +105,10 @@ export default function Login() {
         if (cpf.length < 14) throw new Error("CPF inválido.");
         if (whatsapp.length < 14) throw new Error("WhatsApp inválido.");
 
-        // 1. Usa a nossa Função Segura (RPC) no banco para checar o CPF
         const { data: cpfExistente, error: rpcError } = await supabase.rpc('checar_cpf_existente', { cpf_check: cpf });
-
         if (rpcError) throw new Error("Erro ao validar dados no servidor.");
         if (cpfExistente) throw new Error("Atenção: Este CPF já está cadastrado em outra conta.");
 
-        // 2. Dispara o cadastro
         const { error: authError } = await supabase.auth.signUp({
           email,
           password,
