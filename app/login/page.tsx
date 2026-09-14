@@ -26,13 +26,37 @@ export default function Login() {
     try {
       if (isLogin) {
         // LÓGICA DE LOGIN
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
         
-        router.push("/"); // Redireciona para o gerador de Dossiê
+        // NOVA LÓGICA DE ROTEAMENTO DINÂMICO
+        if (data.session) {
+          try {
+            const userId = data.session.user.id;
+            const resposta = await fetch(`https://smartrs.onrender.com/laudos/meus/${userId}`);
+            
+            if (resposta.ok) {
+              const json = await resposta.json();
+              
+              // Se a lista de laudos for maior que zero, manda pra vitrine.
+              if (json.laudos && json.laudos.length > 0) {
+                router.push("/meus-laudos");
+                return; // Encerra a execução aqui
+              }
+            }
+            
+            // Se não tiver laudos (ou se der erro de conexão), vai pro Novo Laudo
+            router.push("/");
+            
+          } catch (fetchError) {
+            // Fallback de segurança: se a API estiver fora do ar momentaneamente
+            router.push("/");
+          }
+        }
+
       } else {
         // LÓGICA DE CADASTRO
         const { error } = await supabase.auth.signUp({
@@ -54,7 +78,7 @@ export default function Login() {
   };
 
   return (
-    <div className="bg-gray-50 flex flex-col justify-center items-center font-sans">
+    <div className="bg-gray-50 flex flex-col justify-center items-center font-sans min-h-screen">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold text-slate-800">
@@ -89,7 +113,7 @@ export default function Login() {
           </div>
 
           {message.text && (
-            <div className={`p-3 rounded-lg text-sm ${message.type === "error" ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"}`}>
+            <div className={`p-3 rounded-lg text-sm ${message.type === "error" ? "bg-red-50 text-red-600 border border-red-100" : "bg-green-50 text-green-700 border border-green-100"}`}>
               {message.text}
             </div>
           )}
