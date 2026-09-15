@@ -1,18 +1,90 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { 
   Users, MessageCircle, MapPin, Calendar, ArrowLeft, 
-  Search, Inbox, LayoutGrid, List, Eye, TrendingUp 
+  Search, Inbox, LayoutGrid, List, Eye, TrendingUp, ChevronDown 
 } from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Cores blindadas para os status
+const STATUS_COLORS: Record<string, { bg: string, text: string, border: string, dot: string }> = {
+  "Em Atendimento": { bg: "#fef3c7", text: "#b45309", border: "#fde68a", dot: "#d97706" }, // Amarelo
+  "Agendado":       { bg: "#d1fae5", text: "#047857", border: "#a7f3d0", dot: "#059669" }, // Verde
+  "Perdido":        { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0", dot: "#64748b" }, // Cinza
+  "Novo":           { bg: "#dbeafe", text: "#1d4ed8", border: "#bfdbfe", dot: "#2563eb" }, // Azul
+};
+
+// COMPONENTE ISOLADO DE STATUS (Resolve persistência e estilização)
+const StatusSelector = ({ 
+  leadId, 
+  currentStatus, 
+  onStatusChange 
+}: { 
+  leadId: string, 
+  currentStatus: string, 
+  onStatusChange: (id: string, novoStatus: string) => void 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [status, setStatus] = useState(currentStatus || "Novo");
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fecha o menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (newStatus: string) => {
+    setStatus(newStatus);
+    setIsOpen(false);
+    onStatusChange(leadId, newStatus);
+  };
+
+  const styleObj = STATUS_COLORS[status] || STATUS_COLORS["Novo"];
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full border shadow-sm transition-all hover:brightness-95"
+        style={{ backgroundColor: styleObj.bg, color: styleObj.text, borderColor: styleObj.border }}
+      >
+        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: styleObj.dot }}></span>
+        {status}
+        <ChevronDown size={14} className="ml-0.5 opacity-70" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden py-1">
+          {Object.keys(STATUS_COLORS).map((s) => (
+            <button
+              key={s}
+              onClick={() => handleSelect(s)}
+              className="w-full text-left px-4 py-2 text-sm font-bold hover:bg-slate-50 transition-colors flex items-center gap-2"
+              style={{ color: STATUS_COLORS[s].text }}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLORS[s].dot }}></span>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function MeusLeadsPage() {
   const router = useRouter();
@@ -54,7 +126,7 @@ export default function MeusLeadsPage() {
         if (leadsData.length > 6) setViewMode("table");
       }
       
-      // 3. Soma das visualizações à prova de falhas (JSON ou Coluna Direta)
+      // 3. Soma das visualizações
       let views = 0;
       if (laudosData) {
         views = laudosData.reduce((acc, laudo) => {
@@ -64,7 +136,6 @@ export default function MeusLeadsPage() {
           } else if (laudo.estatisticas && typeof laudo.estatisticas === 'object') {
             vJson = laudo.estatisticas.visualizacoes || 0;
           }
-          // Pega o maior valor encontrado (caso esteja numa coluna chamada 'visualizacoes' ou dentro do JSON)
           return acc + Math.max(laudo.visualizacoes || 0, vJson);
         }, 0);
       }
@@ -85,10 +156,9 @@ export default function MeusLeadsPage() {
   };
 
   const atualizarStatus = async (leadId: string, novoStatus: string) => {
-    // 1. Atualiza visualmente na hora (usando 'prev' garante que atualize perfeitamente nos Cards)
+    // Atualiza estado global (opcional agora, pois o componente local se gerencia, mas bom para sincronia)
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: novoStatus } : l));
-    
-    // 2. Salva no banco de dados
+    // Salva no banco de dados
     const { error } = await supabase.from("leads").update({ status: novoStatus }).eq("id", leadId);
     if (error) console.error("Erro ao atualizar status:", error);
   };
@@ -110,16 +180,6 @@ export default function MeusLeadsPage() {
       lead.meus_laudos?.endereco?.toLowerCase().includes(termo)
     );
   });
-
-  // Cores blindadas (Inline Styles) para não sofrerem bloqueio do navegador/tailwind
-  const getStatusStyles = (status: string) => {
-    switch (status) {
-      case "Em Atendimento": return { bg: "#fef3c7", text: "#b45309", border: "#fde68a" }; // Amarelo
-      case "Agendado": return { bg: "#d1fae5", text: "#047857", border: "#a7f3d0" }; // Verde
-      case "Perdido": return { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" }; // Cinza
-      default: return { bg: "#dbeafe", text: "#1d4ed8", border: "#bfdbfe" }; // Azul (Novo)
-    }
-  };
 
   return (
     <div className="bg-slate-50 min-h-screen font-sans py-10 px-4 md:px-8 pb-24">
@@ -174,7 +234,6 @@ export default function MeusLeadsPage() {
         {leads.length > 0 && (
           <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             
-            {/* Barra de Busca */}
             <div className="relative w-full md:w-96">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                 <Search size={18} />
@@ -188,7 +247,6 @@ export default function MeusLeadsPage() {
               />
             </div>
 
-            {/* Toggle de Visualização */}
             <div className="bg-white border border-slate-200 p-1 rounded-lg inline-flex shadow-sm w-full md:w-auto">
               <button 
                 onClick={() => setViewMode("cards")}
@@ -206,7 +264,7 @@ export default function MeusLeadsPage() {
           </div>
         )}
 
-        {/* ESTADO VAZIO */}
+        {/* ESTADO VAZIO / NENHUM RESULTADO */}
         {leads.length === 0 ? (
           <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center shadow-sm mt-10">
             <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-6">
@@ -221,7 +279,7 @@ export default function MeusLeadsPage() {
             </Link>
           </div>
         ) : leadsFiltrados.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 font-medium">
+          <div className="text-center py-12 text-slate-500 font-medium bg-white rounded-2xl border border-slate-200">
             Nenhum lead encontrado para "{busca}"
           </div>
         ) : (
@@ -232,29 +290,24 @@ export default function MeusLeadsPage() {
                 {leadsFiltrados.map((lead) => {
                   const dataCriacao = new Date(lead.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                   const enderecoOrigem = lead.meus_laudos?.endereco || "Dossiê Excluído";
-                  const statusLead = lead.status || "Novo";
-                  const styleObj = getStatusStyles(statusLead);
-
+                  
                   return (
                     <div key={lead.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full relative">
                       
                       <div className="flex justify-between items-start mb-4">
-                        <div className="pr-2">
+                        <div className="pr-2 max-w-[65%]">
                           <h4 className="text-xl font-black text-slate-800 tracking-tight line-clamp-1" title={lead.nome_cliente}>{lead.nome_cliente}</h4>
                           <p className="text-slate-500 font-medium text-sm mt-1">{lead.telefone_cliente}</p>
                         </div>
                         
-                        <select 
-                          value={statusLead}
-                          onChange={(e) => atualizarStatus(lead.id, e.target.value)}
-                          className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm"
-                          style={{ backgroundColor: styleObj.bg, color: styleObj.text, borderColor: styleObj.border }}
-                        >
-                          <option value="Novo" className="bg-white text-slate-800">Novo</option>
-                          <option value="Em Atendimento" className="bg-white text-slate-800">Em Atendimento</option>
-                          <option value="Agendado" className="bg-white text-slate-800">Agendado</option>
-                          <option value="Perdido" className="bg-white text-slate-800">Perdido</option>
-                        </select>
+                        {/* NOVO COMPONENTE ISOLADO AQUI */}
+                        <div className="relative z-10 shrink-0">
+                          <StatusSelector 
+                            leadId={lead.id} 
+                            currentStatus={lead.status || "Novo"} 
+                            onStatusChange={atualizarStatus} 
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-3 mb-8 flex-1">
@@ -287,15 +340,15 @@ export default function MeusLeadsPage() {
 
             {/* RENDERIZAÇÃO: TABELA (CRM) */}
             {viewMode === "table" && (
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-visible">
+                <div className="overflow-x-visible min-h-[300px]">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-bold">
                         <th className="p-4 pl-6">Cliente</th>
                         <th className="p-4">Dossiê de Origem</th>
                         <th className="p-4">Data</th>
-                        <th className="p-4">Status</th>
+                        <th className="p-4 w-40">Status</th>
                         <th className="p-4 pr-6 text-right">Ação</th>
                       </tr>
                     </thead>
@@ -303,8 +356,6 @@ export default function MeusLeadsPage() {
                       {leadsFiltrados.map((lead) => {
                         const dataCriacao = new Date(lead.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                         const enderecoOrigem = lead.meus_laudos?.endereco || "Dossiê Excluído";
-                        const statusLead = lead.status || "Novo";
-                        const styleObj = getStatusStyles(statusLead);
                         
                         return (
                           <tr key={lead.id} className="hover:bg-slate-50 transition-colors">
@@ -319,17 +370,12 @@ export default function MeusLeadsPage() {
                               {dataCriacao}
                             </td>
                             <td className="p-4">
-                              <select 
-                                value={statusLead}
-                                onChange={(e) => atualizarStatus(lead.id, e.target.value)}
-                                className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm"
-                                style={{ backgroundColor: styleObj.bg, color: styleObj.text, borderColor: styleObj.border }}
-                              >
-                                <option value="Novo" className="bg-white text-slate-800">Novo</option>
-                                <option value="Em Atendimento" className="bg-white text-slate-800">Em Atendimento</option>
-                                <option value="Agendado" className="bg-white text-slate-800">Agendado</option>
-                                <option value="Perdido" className="bg-white text-slate-800">Perdido</option>
-                              </select>
+                              {/* NOVO COMPONENTE ISOLADO NA TABELA TAMBÉM */}
+                              <StatusSelector 
+                                leadId={lead.id} 
+                                currentStatus={lead.status || "Novo"} 
+                                onStatusChange={atualizarStatus} 
+                              />
                             </td>
                             <td className="p-4 pr-6 text-right">
                               <button 
