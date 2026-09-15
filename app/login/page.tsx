@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // Adicionado para o link de recuperar senha
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,11 +55,12 @@ export default function Login() {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
         if (error) {
-          setShowResend(true);
+          // SEPARAÇÃO CLARA DE ERROS PARA MELHOR UX
           if (error.message.toLowerCase().includes("email not confirmed")) {
+            setShowResend(true);
             throw new Error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada (ou lixeira/spam).");
           } else if (error.message.toLowerCase().includes("invalid login credentials")) {
-            throw new Error("Credenciais inválidas. Se você acabou de se cadastrar, não esqueça de confirmar o link enviado para o seu e-mail.");
+            throw new Error("E-mail ou senha incorretos.");
           } else {
             throw new Error("Erro de acesso. Verifique seus dados e tente novamente.");
           }
@@ -67,10 +69,7 @@ export default function Login() {
         if (data.session) {
           const userId = data.session.user.id;
           
-          // ==========================================
-          // NOVO: O "CAÇA-FANTASMAS"
-          // Garante que o usuário tem ficha na tabela principal
-          // ==========================================
+          // O "CAÇA-FANTASMAS"
           const { data: userCheck, error: checkError } = await supabase
             .from("usuarios")
             .select("id")
@@ -78,11 +77,10 @@ export default function Login() {
             .maybeSingle();
 
           if (!userCheck) {
-            await supabase.auth.signOut(); // Desloga o fantasma na força
+            await supabase.auth.signOut();
             throw new Error("Falha de sincronização. Sua conta não foi gerada corretamente no banco de dados. Contate o suporte.");
           }
 
-          // Se passou pelo caça-fantasmas, continua o roteamento normal
           try {
             const resposta = await fetch(`https://smartrs.onrender.com/laudos/meus/${userId}`);
             if (resposta.ok) {
@@ -113,12 +111,7 @@ export default function Login() {
           email,
           password,
           options: {
-            data: {
-              nome: nome,
-              cpf: cpf,
-              whatsapp: whatsapp,
-              creci: creci
-            }
+            data: { nome, cpf, whatsapp, creci }
           }
         });
 
@@ -176,7 +169,15 @@ export default function Login() {
             </div> 
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Senha *</label>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-semibold text-slate-700">Senha *</label>
+                {/* LINK RECUPERAR SENHA SÓ APARECE NO LOGIN */}
+                {isLogin && (
+                  <Link href="/recuperar-senha" className="text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+                    Esqueceu a senha?
+                  </Link>
+                )}
+              </div>
               <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required minLength={6} />
             </div>
           </div>
@@ -187,17 +188,14 @@ export default function Login() {
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Nome Completo / Exibição *</label>
                 <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex: João da Silva" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required={!isLogin} />
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">CPF *</label>
                 <input type="text" value={cpf} onChange={(e) => setCpf(formatarCPF(e.target.value))} placeholder="000.000.000-00" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required={!isLogin} />
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">WhatsApp *</label>
                 <input type="text" value={whatsapp} onChange={(e) => setWhatsapp(formatarWhatsApp(e.target.value))} placeholder="(00) 00000-0000" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" required={!isLogin} />
               </div>
-
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-slate-700 mb-1">CRECI <span className="text-slate-400 font-normal">(Opcional)</span></label>
                 <input type="text" value={creci} onChange={(e) => setCreci(e.target.value)} placeholder="Ex: 12345-F" className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" />
