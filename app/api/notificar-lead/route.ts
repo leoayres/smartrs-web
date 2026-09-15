@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     // 2. Dispara o E-mail Transacional
     await resend.emails.send({
-      from: "SmartRS Notificações <onboarding@resend.dev>", // Usando email de teste do Resend primeiro
+      from: "Notificações - SmartRS - Inteligência Imobiliária <notificacoesg@smartrs.ia.br>", // Usando email de teste do Resend primeiro
       to: emailDestino,
       subject: `🎯 Novo Lead Captado: ${nomeCliente} (${enderecoImovel.split(",")[0]})`,
       html: `
