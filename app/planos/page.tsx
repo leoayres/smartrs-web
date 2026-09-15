@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
-import { Check, Zap, Crown, ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { Check, Zap, Crown, ArrowLeft, ShieldCheck, Sparkles, Loader2 } from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,6 +15,9 @@ export default function PlanosPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [usuario, setUsuario] = useState<any>(null);
+  
+  // Novo estado para controlar o botão que está sendo clicado
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
 
   useEffect(() => {
     async function carregarSessao() {
@@ -22,15 +25,46 @@ export default function PlanosPage() {
       if (!session) return router.push("/login");
 
       const { data } = await supabase.from("usuarios").select("*").eq("id", session.user.id).single();
-      setUsuario(data);
+      
+      // Injetamos o e-mail da sessão no objeto usuário para enviar para a Stripe
+      setUsuario({ ...data, email: session.user.email });
       setLoading(false);
     }
     carregarSessao();
   }, [router]);
 
-  // Função simulada de checkout (Aqui você integrará Stripe, Mercado Pago ou Asaas no futuro)
-  const handleAssinar = (nomePlano: string, valor: string) => {
-    alert(`Integração de Pagamento: Você selecionou o plano "${nomePlano}" (${valor}). Em breve, redirecionamento automático para o gateway de pagamento (Pix / Cartão).`);
+  // ==========================================
+  // NOVA FUNÇÃO REAL DE CHECKOUT (STRIPE)
+  // ==========================================
+  const handleCheckout = async (priceId: string, isSubscription: boolean, planoName: string) => {
+    if (!usuario) return;
+    setCheckoutLoading(planoName); // Ativa o loading no botão específico
+
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          userId: usuario.id,
+          email: usuario.email,
+          isSubscription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.checkoutUrl) {
+        // Sucesso! Joga o usuário para a tela da Stripe
+        window.location.href = data.checkoutUrl;
+      } else {
+        alert("Erro ao iniciar pagamento: " + (data.error || "Tente novamente."));
+        setCheckoutLoading(null);
+      }
+    } catch (error) {
+      alert("Erro de conexão com o servidor. Tente novamente.");
+      setCheckoutLoading(null);
+    }
   };
 
   if (loading) {
@@ -90,8 +124,13 @@ export default function PlanosPage() {
               </ul>
             </div>
 
-            <button onClick={() => handleAssinar("Pacote Corretor (5 Créditos)", "R$ 59")} className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md">
-              Comprar 5 Créditos
+            <button 
+              // SUBSTITUA O TEXTO ABAIXO PELO SEU PRICE ID DO PACOTE (EX: price_123xyz)
+              onClick={() => handleCheckout("price_1UFoOm34nWW5YWQMUou2nxRn", false, "pacote")} 
+              disabled={checkoutLoading !== null}
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white font-bold rounded-xl transition-all shadow-md flex justify-center items-center gap-2"
+            >
+              {checkoutLoading === "pacote" ? <><Loader2 size={18} className="animate-spin" /> Processando...</> : "Comprar 5 Créditos"}
             </button>
           </div>
 
@@ -121,8 +160,13 @@ export default function PlanosPage() {
               </ul>
             </div>
 
-            <button onClick={() => handleAssinar("Assinatura Pro (20 laudos/mês)", "R$ 127/mês")} className="w-full py-3.5 bg-white hover:bg-blue-50 text-blue-700 font-black rounded-xl transition-all shadow-lg">
-              Assinar Plano Pro
+            <button 
+              // SUBSTITUA O TEXTO ABAIXO PELO SEU PRICE ID DA ASSINATURA (EX: price_987abc)
+              onClick={() => handleCheckout("price_1UFoRb34nWW5YWQM991cJtS9", true, "assinatura")} 
+              disabled={checkoutLoading !== null}
+              className="w-full py-3.5 bg-white hover:bg-blue-50 disabled:bg-blue-100 disabled:text-blue-400 text-blue-700 font-black rounded-xl transition-all shadow-lg flex justify-center items-center gap-2"
+            >
+              {checkoutLoading === "assinatura" ? <><Loader2 size={18} className="animate-spin" /> Redirecionando...</> : "Assinar Plano Pro"}
             </button>
           </div>
 
@@ -148,16 +192,21 @@ export default function PlanosPage() {
               </ul>
             </div>
 
-            <button onClick={() => handleAssinar("Plano Imobiliária (60 laudos/mês)", "R$ 297/mês")} className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md">
-              Contratar Equipe
+            <button 
+              onClick={() => alert("Plano de Imobiliária em breve! Entre em contato via WhatsApp para montar sua equipe.")} 
+              disabled={checkoutLoading !== null}
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-all shadow-md"
+            >
+              Falar com Consultor
             </button>
           </div>
 
         </div>
 
         {/* RODAPÉ DE SEGURANÇA */}
-        <div className="mt-16 text-center text-xs text-slate-400 font-medium flex items-center justify-center gap-6">
-          <span>🔒 Pagamento 100% Seguro via PIX ou Cartão</span>
+        <div className="mt-16 text-center text-xs text-slate-400 font-medium flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6">
+          <span>🔒 Pagamento 100% Seguro via PIX ou Cartão (Stripe)</span>
+          <span className="hidden md:inline">&bull;</span>
           <span>⚡ Liberação imediata dos créditos após a confirmação</span>
         </div>
 
