@@ -36,17 +36,17 @@ export default function MeusLeadsPage() {
 
       const userId = session.user.id;
 
-      // 1. Busca os Leads apenas deste corretor
+      // 1. Busca os Leads
       const { data: leadsData } = await supabase
         .from("leads")
         .select(`*, meus_laudos (endereco)`)
         .eq("corretor_id", userId)
         .order("criado_em", { ascending: false });
 
-      // 2. Busca os Dossiês deste corretor para somar as visualizações
+      // 2. Busca TODOS os dados dos Dossiês para garantir a contagem de visualizações
       const { data: laudosData } = await supabase
         .from("meus_laudos")
-        .select("estatisticas")
+        .select("*")
         .eq("user_id", userId);
 
       if (leadsData) {
@@ -54,10 +54,19 @@ export default function MeusLeadsPage() {
         if (leadsData.length > 6) setViewMode("table");
       }
       
-      // Soma as visualizações de todos os dossiês
+      // 3. Soma das visualizações à prova de falhas (JSON ou Coluna Direta)
       let views = 0;
       if (laudosData) {
-        views = laudosData.reduce((acc, laudo) => acc + (laudo.estatisticas?.visualizacoes || 0), 0);
+        views = laudosData.reduce((acc, laudo) => {
+          let vJson = 0;
+          if (typeof laudo.estatisticas === 'string') {
+            try { vJson = JSON.parse(laudo.estatisticas).visualizacoes || 0; } catch (e) {}
+          } else if (laudo.estatisticas && typeof laudo.estatisticas === 'object') {
+            vJson = laudo.estatisticas.visualizacoes || 0;
+          }
+          // Pega o maior valor encontrado (caso esteja numa coluna chamada 'visualizacoes' ou dentro do JSON)
+          return acc + Math.max(laudo.visualizacoes || 0, vJson);
+        }, 0);
       }
       setTotalViews(views);
       setLoading(false);
@@ -76,10 +85,12 @@ export default function MeusLeadsPage() {
   };
 
   const atualizarStatus = async (leadId: string, novoStatus: string) => {
-    // 1. Atualiza visualmente na hora (Optimistic UI)
-    setLeads(leads.map(l => l.id === leadId ? { ...l, status: novoStatus } : l));
-    // 2. Salva no banco de dados silenciosamente
-    await supabase.from("leads").update({ status: novoStatus }).eq("id", leadId);
+    // 1. Atualiza visualmente na hora (usando 'prev' garante que atualize perfeitamente nos Cards)
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: novoStatus } : l));
+    
+    // 2. Salva no banco de dados
+    const { error } = await supabase.from("leads").update({ status: novoStatus }).eq("id", leadId);
+    if (error) console.error("Erro ao atualizar status:", error);
   };
 
   if (loading) {
@@ -100,12 +111,13 @@ export default function MeusLeadsPage() {
     );
   });
 
-  const getStatusColor = (status: string) => {
+  // Cores blindadas (Inline Styles) para não sofrerem bloqueio do navegador/tailwind
+  const getStatusStyles = (status: string) => {
     switch (status) {
-      case "Em Atendimento": return "bg-amber-100 text-amber-700 border-amber-200";
-      case "Agendado": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-      case "Perdido": return "bg-slate-100 text-slate-600 border-slate-200";
-      default: return "bg-blue-100 text-blue-700 border-blue-200"; // Novo
+      case "Em Atendimento": return { bg: "#fef3c7", text: "#b45309", border: "#fde68a" }; // Amarelo
+      case "Agendado": return { bg: "#d1fae5", text: "#047857", border: "#a7f3d0" }; // Verde
+      case "Perdido": return { bg: "#f1f5f9", text: "#475569", border: "#e2e8f0" }; // Cinza
+      default: return { bg: "#dbeafe", text: "#1d4ed8", border: "#bfdbfe" }; // Azul (Novo)
     }
   };
 
@@ -221,6 +233,7 @@ export default function MeusLeadsPage() {
                   const dataCriacao = new Date(lead.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                   const enderecoOrigem = lead.meus_laudos?.endereco || "Dossiê Excluído";
                   const statusLead = lead.status || "Novo";
+                  const styleObj = getStatusStyles(statusLead);
 
                   return (
                     <div key={lead.id} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full relative">
@@ -231,16 +244,16 @@ export default function MeusLeadsPage() {
                           <p className="text-slate-500 font-medium text-sm mt-1">{lead.telefone_cliente}</p>
                         </div>
                         
-                        {/* Seletor de Status (Badge Interativo) */}
                         <select 
                           value={statusLead}
                           onChange={(e) => atualizarStatus(lead.id, e.target.value)}
-                          className={`text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm ${getStatusColor(statusLead)}`}
+                          className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm"
+                          style={{ backgroundColor: styleObj.bg, color: styleObj.text, borderColor: styleObj.border }}
                         >
-                          <option value="Novo">Novo</option>
-                          <option value="Em Atendimento">Em Atendimento</option>
-                          <option value="Agendado">Agendado</option>
-                          <option value="Perdido">Perdido</option>
+                          <option value="Novo" className="bg-white text-slate-800">Novo</option>
+                          <option value="Em Atendimento" className="bg-white text-slate-800">Em Atendimento</option>
+                          <option value="Agendado" className="bg-white text-slate-800">Agendado</option>
+                          <option value="Perdido" className="bg-white text-slate-800">Perdido</option>
                         </select>
                       </div>
 
@@ -291,6 +304,7 @@ export default function MeusLeadsPage() {
                         const dataCriacao = new Date(lead.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                         const enderecoOrigem = lead.meus_laudos?.endereco || "Dossiê Excluído";
                         const statusLead = lead.status || "Novo";
+                        const styleObj = getStatusStyles(statusLead);
                         
                         return (
                           <tr key={lead.id} className="hover:bg-slate-50 transition-colors">
@@ -308,12 +322,13 @@ export default function MeusLeadsPage() {
                               <select 
                                 value={statusLead}
                                 onChange={(e) => atualizarStatus(lead.id, e.target.value)}
-                                className={`text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm ${getStatusColor(statusLead)}`}
+                                className="text-[11px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full outline-none cursor-pointer border appearance-none text-center shadow-sm"
+                                style={{ backgroundColor: styleObj.bg, color: styleObj.text, borderColor: styleObj.border }}
                               >
-                                <option value="Novo">Novo</option>
-                                <option value="Em Atendimento">Em Atendimento</option>
-                                <option value="Agendado">Agendado</option>
-                                <option value="Perdido">Perdido</option>
+                                <option value="Novo" className="bg-white text-slate-800">Novo</option>
+                                <option value="Em Atendimento" className="bg-white text-slate-800">Em Atendimento</option>
+                                <option value="Agendado" className="bg-white text-slate-800">Agendado</option>
+                                <option value="Perdido" className="bg-white text-slate-800">Perdido</option>
                               </select>
                             </td>
                             <td className="p-4 pr-6 text-right">
