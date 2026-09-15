@@ -22,8 +22,6 @@ export default function RecuperarSenhaPage() {
     setMessage({ text: "", type: "" });
 
     try {
-      // O Supabase vai enviar um e-mail com um link mágico.
-      // O parâmetro redirectTo diz para onde o usuário deve ir APÓS clicar no link do e-mail.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/atualizar-senha`,
       });
@@ -33,8 +31,9 @@ export default function RecuperarSenhaPage() {
       }
 
       setSucesso(true);
+      // Mensagem atualizada para incluir a variável de forma segura e melhorar o entendimento
       setMessage({
-        text: "E-mail enviado com sucesso! Verifique sua caixa de entrada (e a pasta de Spam) para redefinir sua senha.",
+        text: `Se o endereço estiver em nossa base, um link de recuperação será enviado. Verifique sua caixa de entrada (e Spam).`,
         type: "success"
       });
       
@@ -97,7 +96,10 @@ export default function RecuperarSenhaPage() {
         ) : (
           <div className="bg-green-50 text-green-800 border border-green-200 p-5 rounded-xl text-center">
             <p className="font-semibold mb-2">Pronto!</p>
-            <p className="text-sm">{message.text}</p>
+            {/* Componente visual atualizado para mostrar o email em destaque */}
+            <p className="text-sm">
+              Se o endereço <strong className="text-green-900">{email}</strong> estiver em nossa base, um link de recuperação será enviado. Verifique sua caixa de entrada (e Spam).
+            </p>
           </div>
         )}
 
