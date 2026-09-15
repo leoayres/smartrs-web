@@ -36,7 +36,6 @@ export default function AtualizarSenhaPage() {
     }
 
     try {
-      // Atualiza a senha do usuário logado pela sessão temporária do link mágico
       const { error } = await supabase.auth.updateUser({
         password: password
       });
@@ -49,14 +48,22 @@ export default function AtualizarSenhaPage() {
         type: "success" 
       });
 
-      // Aguarda 3 segundos e joga o usuário para o login
       setTimeout(() => {
         router.push("/login");
       }, 3000);
 
     } catch (error: any) {
+      // CAÇA-ERROS INTELIGENTE (TRADUÇÃO)
+      let errorMessage = error.message || "Erro ao atualizar a senha. O link pode ter expirado.";
+
+      if (errorMessage.toLowerCase().includes("different from the old password")) {
+        errorMessage = "A nova senha não pode ser igual à atual. Por favor, digite uma senha diferente.";
+      } else if (errorMessage.toLowerCase().includes("auth session missing") || errorMessage.toLowerCase().includes("expired")) {
+        errorMessage = "Sua sessão expirou ou o link é inválido. Por favor, solicite a recuperação novamente.";
+      }
+
       setMessage({ 
-        text: error.message || "Erro ao atualizar a senha. O link pode ter expirado.", 
+        text: errorMessage, 
         type: "error" 
       });
     } finally {
@@ -104,7 +111,7 @@ export default function AtualizarSenhaPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-1">Confirme a Nova Senha *</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock size= {18} className="text-slate-400" />
+                  <Lock size={18} className="text-slate-400" />
                 </div>
                 <input 
                   type="password" 
