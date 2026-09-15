@@ -90,7 +90,7 @@ export default function Login() {
           // caso ele já tenha dossiês, faremos a consulta DIRETO no Supabase (ultrarrápida):
           try {
             const { data: laudos } = await supabase
-              .from("laudos") // Certifique-se de que este é o nome da sua tabela
+              .from("meus_laudos") // Certifique-se de que este é o nome da sua tabela
               .select("id")
               .eq("user_id", userId) // Certifique-se de que a coluna de relação chama-se user_id
               .limit(1);
