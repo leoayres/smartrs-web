@@ -4,9 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const supabase = createClient(
+// NOVO: Cliente Admin (com superpoderes) usando a Service Role Key
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // <- Usando a chave mestra aqui!
 );
 
 export async function POST(req: Request) {
@@ -17,16 +18,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // 1. Busca os dados do Corretor e do Imóvel
+    // 1. Busca os dados públicos (Nome do Corretor e Endereço do Imóvel)
     const [{ data: corretor }, { data: laudo }] = await Promise.all([
-      supabase.from("usuarios").select("nome, email").eq("id", corretorId).single(),
-      supabase.from("meus_laudos").select("endereco").eq("id", laudoId).single(),
+      supabaseAdmin.from("usuarios").select("nome").eq("id", corretorId).single(),
+      supabaseAdmin.from("meus_laudos").select("endereco").eq("id", laudoId).single(),
     ]);
 
-    const emailDestino = corretor?.email;
+    // 2. Busca o E-mail privado diretamente na auth.users do Supabase
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.getUserById(corretorId);
+    
+    const emailDestino = authData?.user?.email;
+
     if (!emailDestino) {
-      console.log("⚠️ Corretor sem e-mail cadastrado no banco.");
-      return NextResponse.json({ message: "Corretor sem email cadastrado" }, { status: 200 });
+      console.log("⚠️ Corretor sem e-mail cadastrado na tabela auth.users");
+      return NextResponse.json({ message: "Corretor sem email" }, { status: 200 });
     }
 
     const enderecoImovel = laudo?.endereco || "Endereço não identificado";
@@ -36,9 +41,9 @@ export async function POST(req: Request) {
     );
     const linkWhatsApp = `https://wa.me/55${telefoneLimpo}?text=${msgWhatsApp}`;
 
-    // 2. Dispara o E-mail Transacional
+    // 3. Dispara o E-mail Transacional Oficial
     const { data, error } = await resend.emails.send({
-      from: "SmartRS Inteligência Imobiliária <notificacao@smartrs.ia.br>", // Já usando seu domínio novo!
+      from: "SmartRS Inteligência Imobiliária <notificacao@smartrs.ia.br>", 
       to: emailDestino,
       subject: `🎯 Novo Lead Captado: ${nomeCliente} (${enderecoImovel.split(",")[0]})`,
       html: `
@@ -88,9 +93,6 @@ export async function POST(req: Request) {
       `,
     });
 
-    // ==========================================
-    // 🕵️‍♂️ O ESPIÃO: Captura o erro exato do Resend
-    // ==========================================
     if (error) {
       console.error("⛔ ERRO DO RESEND:", error);
       return NextResponse.json({ error: error.message }, { status: 400 });
