@@ -81,6 +81,29 @@ export default function Login() {
             throw new Error("Falha de sincronização. Sua conta não foi gerada corretamente no banco de dados. Contate o suporte.");
           }
 
+          // ==========================================
+          // SOLUÇÃO: REDIRECIONAMENTO IMEDIATO
+          // Removida a chamada ao Render (que causava Cold Start de 40s)
+          // ==========================================
+          
+          // Opcional: Se você quiser manter a lógica de jogar para "/meus-laudos"
+          // caso ele já tenha dossiês, faremos a consulta DIRETO no Supabase (ultrarrápida):
+          try {
+            const { data: laudos } = await supabase
+              .from("laudos") // Certifique-se de que este é o nome da sua tabela
+              .select("id")
+              .eq("user_id", userId) // Certifique-se de que a coluna de relação chama-se user_id
+              .limit(1);
+
+            if (laudos && laudos.length > 0) {
+              router.push("/meus-laudos");
+            } else {
+              router.push("/");
+            }
+          } catch (err) {
+            // Se der qualquer erro na verificação, apenas loga e manda pra home
+            router.push("/");
+          }
           try {
             const resposta = await fetch(`https://smartrs.onrender.com/laudos/meus/${userId}`);
             if (resposta.ok) {
