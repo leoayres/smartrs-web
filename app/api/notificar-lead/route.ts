@@ -25,6 +25,7 @@ export async function POST(req: Request) {
 
     const emailDestino = corretor?.email;
     if (!emailDestino) {
+      console.log("⚠️ Corretor sem e-mail cadastrado no banco.");
       return NextResponse.json({ message: "Corretor sem email cadastrado" }, { status: 200 });
     }
 
@@ -36,8 +37,8 @@ export async function POST(req: Request) {
     const linkWhatsApp = `https://wa.me/55${telefoneLimpo}?text=${msgWhatsApp}`;
 
     // 2. Dispara o E-mail Transacional
-    await resend.emails.send({
-      from: "Notificações - SmartRS - Inteligência Imobiliária <notificacoesg@smartrs.ia.br>", // Usando email de teste do Resend primeiro
+    const { data, error } = await resend.emails.send({
+      from: "SmartRS Inteligência Imobiliária <notificacao@smartrs.ia.br>", // Já usando seu domínio novo!
       to: emailDestino,
       subject: `🎯 Novo Lead Captado: ${nomeCliente} (${enderecoImovel.split(",")[0]})`,
       html: `
@@ -87,9 +88,19 @@ export async function POST(req: Request) {
       `,
     });
 
-    return NextResponse.json({ success: true });
+    // ==========================================
+    // 🕵️‍♂️ O ESPIÃO: Captura o erro exato do Resend
+    // ==========================================
+    if (error) {
+      console.error("⛔ ERRO DO RESEND:", error);
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    console.log("✅ EMAIL ENVIADO COM SUCESSO!", data);
+    return NextResponse.json({ success: true, data });
+
   } catch (error: any) {
-    console.error("Erro ao enviar notificação de lead:", error);
+    console.error("⛔ ERRO GERAL NA ROTA:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
