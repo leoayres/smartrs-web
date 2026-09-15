@@ -6,7 +6,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-06-20", // Versão atual da API
+  apiVersion: "2025-02-24.acacia", // Versão exata exigida pela biblioteca v17
   appInfo: {
     name: "SmartRS",
     version: "1.0.0",
