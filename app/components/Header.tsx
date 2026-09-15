@@ -42,8 +42,12 @@ export default function Header() {
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
-  // HEADER PÚBLICO
-  if (pathname === "/login" || pathname?.startsWith("/laudo/")) {
+  // ==========================================
+  // LÓGICA DO HEADER PÚBLICO ATUALIZADA
+  // ==========================================
+  const rotasPublicas = ["/login", "/recuperar-senha", "/atualizar-senha"];
+  
+  if (rotasPublicas.includes(pathname) || pathname?.startsWith("/laudo/")) {
     return (
       <header className="bg-white border-b border-gray-200 py-5 shadow-sm w-full">
         <div className="max-w-6xl mx-auto px-6 flex justify-center items-center">
@@ -74,7 +78,6 @@ export default function Header() {
             <Link href="/meus-laudos" className={`text-sm font-semibold transition-colors ${pathname === "/meus-laudos" ? "text-blue-600" : "text-gray-500 hover:text-gray-900"}`}>
               Meus Laudos
             </Link>
-            {/* NOVA ABA: MEUS LEADS */}
             <Link href="/meus-leads" className={`text-sm font-semibold transition-colors ${pathname === "/meus-leads" ? "text-blue-600" : "text-gray-500 hover:text-gray-900"}`}>
               Meus Leads
             </Link>
@@ -91,7 +94,7 @@ export default function Header() {
           
           <div className="h-8 w-px bg-gray-200 hidden md:block"></div>
           
-          {/* Badge de Créditos com Ícone Profissional (Oculto para Admins) */}
+          {/* Badge de Créditos */}
           {creditos !== null && !isAdmin && (
             <Link href="/planos" className={`hidden md:flex items-center gap-2 text-sm px-3.5 py-2 rounded-xl font-bold transition-all shadow-sm border ${creditos <= 0 ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100' : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'}`}>
               <Coins size={16} className={creditos <= 0 ? 'text-red-600' : 'text-amber-600'} />
@@ -145,7 +148,6 @@ export default function Header() {
             <Link href="/meus-laudos" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/meus-laudos" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               Meus Laudos
             </Link>
-            {/* NOVA ABA MOBILE: MEUS LEADS */}
             <Link href="/meus-leads" onClick={() => setIsMobileMenuOpen(false)} className={`text-base font-semibold transition-colors ${pathname === "/meus-leads" ? "text-blue-600" : "text-gray-700 hover:text-gray-900"}`}>
               Meus Leads
             </Link>
