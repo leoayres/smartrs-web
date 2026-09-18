@@ -60,7 +60,7 @@ export default function LaudoClient() {
           localStorage.setItem(storageKey, 'true');
 
          // 2. Chama a API e exibe o erro exato se falhar
-          fetch(`/api/laudos/${laudoId}/view`, { 
+          fetch(`/api/laudo/${laudoId}/view`, { 
             method: 'POST',
             credentials: 'include' 
           }).then(async (res) => {
