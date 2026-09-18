@@ -26,6 +26,7 @@ export default function LaudoClient() {
   // Guarda todos os dados da API (html, views, corretor, endereço)
   const [dossie, setDossie] = useState<any>(null);
   const [erro, setErro] = useState("");
+  const [statusMsg, setStatusMsg] = useState("Carregando o dossiê…");
 
   // Estados do Formulário de Lead
   const [nome, setNome] = useState("");
@@ -36,52 +37,93 @@ export default function LaudoClient() {
   // useRef para evitar chamadas duplas no Strict Mode do React 18
   const viewRegistrada = useRef(false);
 
+  // Registra a visualização (blindado contra F5 via localStorage)
+  const registrarView = () => {
+    try {
+      const storageKey = `viewed_laudo_${laudoId}`;
+      if (localStorage.getItem(storageKey) || viewRegistrada.current) return;
+      viewRegistrada.current = true;
+      localStorage.setItem(storageKey, "true");
+
+      fetch(`/api/laudo/${laudoId}/view`, {
+        method: "POST",
+        credentials: "include",
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json();
+            console.error("❌ Erro retornado pela API de View:", body);
+          } else {
+            console.log("✅ View contabilizada com sucesso!");
+          }
+        })
+        .catch((err) => console.error("❌ Falha de rede ao registrar visualização:", err));
+    } catch {
+      // localStorage indisponível (ex.: navegação privada): a view não é crítica
+    }
+  };
+
+  // fetch com timeout — aborta requisições penduradas em vez de ficar preso pra sempre
+  const fetchComTimeout = async (url: string, ms: number) => {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(id);
+    }
+  };
+
+  // Carrega o dossiê com timeout + retry (aguenta o cold start do Render free)
+  const carregarLaudo = async () => {
+    setErro("");
+    const url = `https://smartrs.onrender.com/laudos/virtual/${laudoId}`;
+    const MAX_TENTATIVAS = 2;
+    const TIMEOUT_MS = 70000; // ~70s: cobre o tempo de o servidor hibernado acordar
+
+    for (let tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
+      try {
+        const res = await fetchComTimeout(url, TIMEOUT_MS);
+
+        if (res.status === 404) {
+          setErro("Este dossiê não foi encontrado. Confira se o link está completo e correto.");
+          return;
+        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        setDossie(data);
+        registrarView();
+        return;
+      } catch (e) {
+        if (tentativa >= MAX_TENTATIVAS) {
+          setErro("Não conseguimos carregar o dossiê agora. O servidor pode estar iniciando — tente novamente em instantes.");
+          return;
+        }
+        // pequena pausa antes de tentar de novo
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
+  };
+
   useEffect(() => {
     if (!laudoId) return;
-
-    const fetchLaudo = async () => {
-      try {
-        const res = await fetch(`https://smartrs.onrender.com/laudos/virtual/${laudoId}`);
-        if (!res.ok) throw new Error("Laudo não encontrado ou indisponível.");
-        
-        const data = await res.json();
-        setDossie(data); // Salva o pacote completo vindo do Python
-        
-        // ========================================================
-        // BLINDAGEM DUPLA CONTRA F5 (LocalStorage + Cookies)
-        // ========================================================
-        const storageKey = `viewed_laudo_${laudoId}`;
-        const jaVisualizouLocal = localStorage.getItem(storageKey);
-        
-        if (!jaVisualizouLocal && !viewRegistrada.current) {
-          viewRegistrada.current = true;
-          
-          // 1. Marca imediatamente no navegador do usuário (bloqueia o próximo F5 sem gastar internet)
-          localStorage.setItem(storageKey, 'true');
-
-         // 2. Chama a API e exibe o erro exato se falhar
-          fetch(`/api/laudo/${laudoId}/view`, { 
-            method: 'POST',
-            credentials: 'include' 
-          }).then(async (res) => {
-            if (!res.ok) {
-              const body = await res.json();
-              console.error("❌ Erro retornado pela API de View:", body);
-            } else {
-              console.log("✅ View contabilizada com sucesso!");
-            }
-          }).catch(err => {
-             console.error("❌ Falha de rede ao registrar visualização:", err);
-          });
-        }
-
-      } catch (e: any) {
-        setErro(e.message);
-      }
-    };
-
-    fetchLaudo();
+    carregarLaudo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [laudoId]);
+
+  // Mensagem de status que progride enquanto carrega (dá sensação de progresso)
+  useEffect(() => {
+    if (dossie || erro) return;
+    const inicio = Date.now();
+    const id = setInterval(() => {
+      const s = (Date.now() - inicio) / 1000;
+      if (s < 6) setStatusMsg("Carregando o dossiê…");
+      else if (s < 18) setStatusMsg("Preparando os dados do imóvel…");
+      else setStatusMsg("O servidor está reativando — a primeira visita pode levar até 1 minuto…");
+    }, 1000);
+    return () => clearInterval(id);
+  }, [dossie, erro]);
 
   // ==========================================
   // FUNÇÕES DE CAPTAÇÃO DE LEADS
@@ -133,9 +175,17 @@ export default function LaudoClient() {
   // ==========================================
   if (erro) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 text-red-600 p-8 rounded-xl font-bold border border-red-100 shadow-sm text-center">
-          ⚠️ {erro}
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="bg-white text-center p-8 rounded-2xl border border-slate-200 shadow-sm max-w-sm w-full">
+          <div className="text-4xl mb-3">⚠️</div>
+          <h2 className="text-lg font-bold text-slate-800 mb-2">Não foi possível carregar o dossiê</h2>
+          <p className="text-sm text-slate-500 mb-6 leading-relaxed">{erro}</p>
+          <button
+            onClick={() => carregarLaudo()}
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
@@ -143,8 +193,33 @@ export default function LaudoClient() {
 
   if (!dossie) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-xl text-blue-600 animate-pulse font-medium">Carregando Dossiê Digital...</div>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 px-4">
+        <div className="w-full max-w-4xl">
+          {/* status com spinner */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-sm text-slate-500 font-medium text-center">{statusMsg}</span>
+          </div>
+
+          {/* skeleton no formato do dossiê */}
+          <div className="space-y-5 animate-pulse">
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <div className="h-3 w-40 bg-slate-200 rounded mb-4"></div>
+              <div className="h-6 w-3/4 bg-slate-200 rounded mb-3"></div>
+              <div className="h-4 w-1/2 bg-slate-100 rounded"></div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <div className="h-4 w-48 bg-slate-200 rounded mb-4"></div>
+              <div className="h-40 w-full bg-slate-100 rounded-xl"></div>
+            </div>
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <div className="h-4 w-40 bg-slate-200 rounded mb-4"></div>
+              <div className="h-3 w-full bg-slate-100 rounded mb-2.5"></div>
+              <div className="h-3 w-11/12 bg-slate-100 rounded mb-2.5"></div>
+              <div className="h-3 w-4/5 bg-slate-100 rounded"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
