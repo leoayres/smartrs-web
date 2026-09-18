@@ -153,7 +153,7 @@ export default function LaudoClient() {
     <div className="bg-gray-50 flex flex-col items-center py-12 font-sans pb-24 px-4">
       
       {/* 1. O DOSSIÊ PRINCIPAL */}
-      <div className="w-full max-w-4xl bg-white p-8 md:p-14 rounded-2xl shadow-lg border border-gray-100 relative">
+      <div className="w-full max-w-4xl bg-slate-100 p-4 md:p-8 rounded-2xl shadow-lg border border-gray-100 relative">
         <div className="absolute top-6 right-6 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm flex items-center gap-2">
           👁️ {dossie.estatisticas?.visualizacoes || 0} {dossie.estatisticas?.visualizacoes === 1 ? "visualização" : "visualizações"}
         </div>
