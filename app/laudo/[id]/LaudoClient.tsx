@@ -47,10 +47,23 @@ export default function LaudoClient() {
         const data = await res.json();
         setDossie(data); // Salva o pacote completo vindo do Python
         
-        // REGISTRA A VIEW DE FORMA SEGURA SE AINDA NÃO FOI FEITO NESTA SESSÃO
-        if (!viewRegistrada.current) {
+        // ========================================================
+        // BLINDAGEM DUPLA CONTRA F5 (LocalStorage + Cookies)
+        // ========================================================
+        const storageKey = `viewed_laudo_${laudoId}`;
+        const jaVisualizouLocal = localStorage.getItem(storageKey);
+        
+        if (!jaVisualizouLocal && !viewRegistrada.current) {
           viewRegistrada.current = true;
-          fetch(`/api/laudos/${laudoId}/view`, { method: 'POST' }).catch(err => {
+          
+          // 1. Marca imediatamente no navegador do usuário (bloqueia o próximo F5 sem gastar internet)
+          localStorage.setItem(storageKey, 'true');
+
+          // 2. Chama a API informando explicitamente para trafegar os cookies
+          fetch(`/api/laudos/${laudoId}/view`, { 
+            method: 'POST',
+            credentials: 'same-origin' // CRÍTICO: Faz o navegador enviar e salvar o cookie da API
+          }).catch(err => {
              console.error("Falha ao registrar visualização:", err);
           });
         }
