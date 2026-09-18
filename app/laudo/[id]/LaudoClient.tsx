@@ -59,13 +59,19 @@ export default function LaudoClient() {
           // 1. Marca imediatamente no navegador do usuário (bloqueia o próximo F5 sem gastar internet)
           localStorage.setItem(storageKey, 'true');
 
-          // 2. Chama a API informando explicitamente para trafegar os cookies
-          // AQUI: Atualizado de same-origin para include
+         // 2. Chama a API e exibe o erro exato se falhar
           fetch(`/api/laudos/${laudoId}/view`, { 
             method: 'POST',
             credentials: 'include' 
+          }).then(async (res) => {
+            if (!res.ok) {
+              const body = await res.json();
+              console.error("❌ Erro retornado pela API de View:", body);
+            } else {
+              console.log("✅ View contabilizada com sucesso!");
+            }
           }).catch(err => {
-             console.error("Falha ao registrar visualização:", err);
+             console.error("❌ Falha de rede ao registrar visualização:", err);
           });
         }
 
