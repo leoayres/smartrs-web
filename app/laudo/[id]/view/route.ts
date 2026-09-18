@@ -1,10 +1,15 @@
-// app/api/laudos/[id]/view/route.ts
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const laudoId = params.id;
+// CORREÇÃO: 'params' agora é tipado como uma Promise no Next.js 15+
+export async function POST(
+  request: Request, 
+  { params }: { params: Promise<{ id: string }> }
+) {
+  // CORREÇÃO: Precisamos aguardar a Promise ser resolvida antes de ler o 'id'
+  const resolvedParams = await params;
+  const laudoId = resolvedParams.id;
   
   if (!laudoId) {
     return NextResponse.json({ error: 'ID ausente' }, { status: 400 });
@@ -25,7 +30,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  // Aqui estamos chamando a RPC (Remote Procedure Call) que criamos no SQL Editor
+  // Chamada da RPC (Remote Procedure Call) no Supabase
   const { error } = await supabase.rpc('incrementar_visualizacao_laudo', { row_id: laudoId });
 
   if (error) {
@@ -36,9 +41,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // 3. Planta o Cookie para impedir o F5
   const response = NextResponse.json({ status: 'counted', message: 'View contabilizada' }, { status: 200 });
   
+  // O await cookies() é exigido no Next 15 para manipular cookies dinamicamente
   response.cookies.set(cookieName, 'true', {
     maxAge: 60 * 60 * 24, // 24 horas em segundos
-    httpOnly: true,       // Impede que scripts injetados manipulem (XSS)
+    httpOnly: true,       // Impede XSS
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
