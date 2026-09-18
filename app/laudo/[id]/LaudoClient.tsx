@@ -62,7 +62,7 @@ export default function LaudoClient() {
           // 2. Chama a API informando explicitamente para trafegar os cookies
           fetch(`/api/laudos/${laudoId}/view`, { 
             method: 'POST',
-            credentials: 'same-origin' // CRÍTICO: Faz o navegador enviar e salvar o cookie da API
+            credentials: 'include' // CRÍTICO: Faz o navegador enviar e salvar o cookie da API
           }).catch(err => {
              console.error("Falha ao registrar visualização:", err);
           });
