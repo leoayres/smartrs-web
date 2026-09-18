@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-// CORREÇÃO: 'params' agora é tipado como uma Promise no Next.js 15+
 export async function POST(
   request: Request, 
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // CORREÇÃO: Precisamos aguardar a Promise ser resolvida antes de ler o 'id'
   const resolvedParams = await params;
   const laudoId = resolvedParams.id;
   
@@ -15,8 +13,8 @@ export async function POST(
     return NextResponse.json({ error: 'ID ausente' }, { status: 400 });
   }
 
-  // 1. O Filtro de F5 (Verifica o Cookie das últimas 24h)
-  const cookieStore = cookies();
+  // 1. O Filtro de F5 (No Next.js 15, cookies() precisa do 'await')
+  const cookieStore = await cookies();
   const cookieName = `viewed_laudo_${laudoId}`;
   
   if (cookieStore.has(cookieName)) {
@@ -41,7 +39,6 @@ export async function POST(
   // 3. Planta o Cookie para impedir o F5
   const response = NextResponse.json({ status: 'counted', message: 'View contabilizada' }, { status: 200 });
   
-  // O await cookies() é exigido no Next 15 para manipular cookies dinamicamente
   response.cookies.set(cookieName, 'true', {
     maxAge: 60 * 60 * 24, // 24 horas em segundos
     httpOnly: true,       // Impede XSS
