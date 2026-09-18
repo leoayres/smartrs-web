@@ -130,7 +130,7 @@ export default function Home() {
         <div className="w-full max-w-2xl bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-gray-100 relative overflow-hidden">
           <LoadingSteps 
             titulo="Gerando Dossiê de Inteligência..." 
-            subtitulo="Nossa Inteligência Artificial está vasculhando bancos de dados imobiliários, climáticos e geoespaciais em tempo real." 
+            subtitulo="Nossa Inteligência Artificial está vasculhando bancos de dados imobiliários, bases governamentais e geoespaciais em tempo real." 
             variant="list" 
           />
         </div>
