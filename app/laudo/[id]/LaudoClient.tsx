@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { MessageCircle, Phone, User, Send, CheckCircle } from "lucide-react";
@@ -33,8 +33,10 @@ export default function LaudoClient() {
   const [enviandoLead, setEnviandoLead] = useState(false);
   const [leadSucesso, setLeadSucesso] = useState(false);
 
+  // useRef para evitar chamadas duplas no Strict Mode do React 18
+  const viewRegistrada = useRef(false);
+
   useEffect(() => {
-    // Trava de segurança: só faz o fetch se o laudoId existir
     if (!laudoId) return;
 
     const fetchLaudo = async () => {
@@ -44,6 +46,15 @@ export default function LaudoClient() {
         
         const data = await res.json();
         setDossie(data); // Salva o pacote completo vindo do Python
+        
+        // REGISTRA A VIEW DE FORMA SEGURA SE AINDA NÃO FOI FEITO NESTA SESSÃO
+        if (!viewRegistrada.current) {
+          viewRegistrada.current = true;
+          fetch(`/api/laudos/${laudoId}/view`, { method: 'POST' }).catch(err => {
+             console.error("Falha ao registrar visualização:", err);
+          });
+        }
+
       } catch (e: any) {
         setErro(e.message);
       }
@@ -71,7 +82,7 @@ export default function LaudoClient() {
       if (error) throw error;
       setLeadSucesso(true);
 
-      // NOVO: Dispara a notificação de e-mail em background sem travar a UI
+      // Dispara a notificação de e-mail em background sem travar a UI
       fetch("/api/notificar-lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -124,7 +135,7 @@ export default function LaudoClient() {
       {/* 1. O DOSSIÊ PRINCIPAL */}
       <div className="w-full max-w-4xl bg-white p-8 md:p-14 rounded-2xl shadow-lg border border-gray-100 relative">
         <div className="absolute top-6 right-6 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-bold border border-blue-100 shadow-sm flex items-center gap-2">
-          👁️ {dossie.estatisticas.visualizacoes} {dossie.estatisticas.visualizacoes === 1 ? "visualização" : "visualizações"}
+          👁️ {dossie.estatisticas?.visualizacoes || 0} {dossie.estatisticas?.visualizacoes === 1 ? "visualização" : "visualizações"}
         </div>
 
         <div dangerouslySetInnerHTML={{ __html: dossie.html_completo }} />
